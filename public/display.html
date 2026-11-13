@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Soccer Scoreboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080c14;
+  --surface: #111827;
+  --blue: #3b82f6;
+  --blue-glow: #3b82f644;
+  --red: #ef4444;
+  --red-glow: #ef444444;
+  --gold: #fbbf24;
+  --gold-dim: #92742a;
+  --text: #f1f5f9;
+  --muted: #64748b;
+  --green: #22c55e;
+}
+
+html, body {
+  height: 100%; overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ──────────────────────────────────── */
+.container {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  padding: clamp(12px, 2vh, 30px);
+  gap: clamp(8px, 1.5vh, 20px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Title bar ───────────────────────────────── */
+.title-bar {
+  text-align: center;
+  padding: clamp(6px, 1vh, 16px) 0;
+}
+.event-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.2rem, 3.5vw, 3rem);
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 30px #fbbf2444;
+}
+.match-status-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 16px;
+  border-radius: 20px;
+  font-size: clamp(0.6rem, 1.2vw, 0.9rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.match-status-badge.ready { background: #334155; color: #94a3b8; }
+.match-status-badge.live { background: #16a34a33; color: #4ade80; animation: pulse-badge 1.5s infinite; }
+.match-status-badge.paused { background: #ca8a0433; color: #facc15; }
+.match-status-badge.ended { background: #dc262633; color: #f87171; }
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Scoreboard ──────────────────────────────── */
+.scoreboard {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: clamp(10px, 3vw, 60px);
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Team panels ─────────────────────────────── */
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.5vh, 20px);
+}
+.team-logo-wrap {
+  width: clamp(50px, 10vw, 140px);
+  height: clamp(50px, 10vw, 140px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.team-a .team-logo-wrap {
+  background: var(--blue-glow);
+  border: 3px solid var(--blue);
+  box-shadow: 0 0 30px var(--blue-glow);
+}
+.team-b .team-logo-wrap {
+  background: var(--red-glow);
+  border: 3px solid var(--red);
+  box-shadow: 0 0 30px var(--red-glow);
+}
+.team-logo {
+  width: 70%; height: 70%;
+  object-fit: contain;
+}
+.team-logo-placeholder {
+  font-size: clamp(1.5rem, 4vw, 4rem);
+}
+.team-name-box {
+  padding: clamp(6px, 1vh, 14px) clamp(16px, 3vw, 40px);
+  border-radius: 10px;
+  font-size: clamp(1rem, 2.8vw, 2.4rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  max-width: 100%;
+  word-break: break-word;
+}
+.team-a .team-name-box {
+  background: #1e3a5f;
+  border: 2px solid var(--blue);
+  color: #93c5fd;
+  box-shadow: 0 0 20px var(--blue-glow);
+}
+.team-b .team-name-box {
+  background: #5f1e1e;
+  border: 2px solid var(--red);
+  color: #fca5a5;
+  box-shadow: 0 0 20px var(--red-glow);
+}
+
+/* ── Center scores ───────────────────────────── */
+.center-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2vh, 30px);
+}
+.scores {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 30px);
+}
+.score {
+  font-family: 'Orbitron', 'Courier New', monospace;
+  font-size: clamp(4rem, 14vw, 14rem);
+  font-weight: 900;
+  line-height: 1;
+  transition: transform 0.15s, text-shadow 0.3s;
+  font-variant-numeric: tabular-nums;
+}
+.score.team-a-score { color: #93c5fd; text-shadow: 0 0 40px var(--blue-glow); }
+.score.team-b-score { color: #fca5a5; text-shadow: 0 0 40px var(--red-glow); }
+.score.pop {
+  animation: score-pop 0.35s ease-out;
+}
+@keyframes score-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.separator {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2.5rem, 8vw, 8rem);
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1;
+  opacity: 0.6;
+}
+
+/* ── Timer ────────────────────────────────────── */
+.timer-section {
+  text-align: center;
+}
+.timer-value {
+  font-family: 'Orbitron', 'Courier New', monospace;
+  font-size: clamp(2rem, 6vw, 5rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  transition: color 0.3s;
+}
+.timer-value.running { color: var(--green); }
+.timer-value.low { color: var(--gold); animation: timer-blink 1s infinite; }
+.timer-value.critical { color: var(--red); animation: timer-blink 0.5s infinite; }
+.timer-value.ended { color: var(--red); }
+
+@keyframes timer-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.timer-bar-track {
+  margin-top: clamp(4px, 0.8vh, 12px);
+  width: clamp(150px, 30vw, 500px);
+  height: clamp(4px, 0.6vh, 8px);
+  background: #1e293b;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: auto;
+  margin-right: auto;
+}
+.timer-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--green);
+  transition: width 0.3s linear, background 0.3s;
+}
+.timer-bar-fill.low { background: var(--gold); }
+.timer-bar-fill.critical { background: var(--red); }
+
+/* ── Footer ──────────────────────────────────── */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(4px, 0.5vh, 10px) 0;
+}
+.conn-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: clamp(0.6rem, 1vw, 0.8rem);
+  color: var(--muted);
+}
+.conn-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red);
+}
+.conn-dot.ok { background: var(--green); }
+
+.fullscreen-btn {
+  padding: 6px 16px;
+  font-size: clamp(0.6rem, 1vw, 0.85rem);
+  background: #1e293b;
+  color: var(--muted);
+  border: 1px solid #334155;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.fullscreen-btn:hover { background: #334155; color: var(--text); }
+
+/* ── Top-Right Fixed Fullscreen Toggle ─────────────── */
+.top-fullscreen-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 10px rgba(251, 191, 36, 0.2);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.top-fullscreen-btn:hover {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: #fbbf24;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(251, 191, 36, 0.4);
+}
+
+/* ── Times-up overlay ────────────────────────── */
+.timesup-overlay {
+  position: fixed; inset: 0;
+  background: #000000dd;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s;
+}
+.timesup-overlay.show { opacity: 1; pointer-events: auto; }
+.timesup-text {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(3rem, 10vw, 10rem);
+  font-weight: 900;
+  color: var(--red);
+  text-shadow: 0 0 60px #ef444488;
+  animation: timesup-pulse 1s infinite;
+}
+@keyframes timesup-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.7; }
+}
+
+/* ── No-logo fallback icon ───────────────────── */
+.team-a .team-logo-placeholder { color: var(--blue); }
+.team-b .team-logo-placeholder { color: var(--red); }
+
+/* ── Match Overview (Automated Summary Screen) ──────── */
+.overview-overlay {
+  position: fixed; inset: 0;
+  background: rgba(8, 12, 20, 0.96);
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  z-index: 950;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: scale(0.97);
+  padding: clamp(16px, 2.5vh, 32px);
+  overflow-y: auto;
+}
+.overview-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.overview-header {
+  text-align: center;
+  margin-bottom: clamp(12px, 2vh, 22px);
+}
+.overview-badge {
+  display: inline-block;
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  padding: 4px 16px;
+  border-radius: 20px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.overview-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.3rem, 2.6vw, 2.2rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.overview-result-banner {
+  margin-top: 6px;
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.1rem, 2.2vw, 1.8rem);
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.overview-result-banner.team-a-win {
+  color: #93c5fd;
+  text-shadow: 0 0 25px var(--blue-glow);
+}
+.overview-result-banner.team-b-win {
+  color: #fca5a5;
+  text-shadow: 0 0 25px var(--red-glow);
+}
+.overview-result-banner.draw {
+  color: var(--gold);
+  text-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
+}
+
+/* Split screen layout */
+.overview-split {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: clamp(16px, 3vw, 40px);
+  align-items: stretch;
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.overview-team-card {
+  background: rgba(17, 24, 39, 0.85);
+  border: 2px solid #1f2937;
+  border-radius: 18px;
+  padding: clamp(16px, 2.5vh, 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+.overview-team-card.team-a {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.15);
+}
+.overview-team-card.team-b {
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.15);
+}
+.overview-team-card.winner {
+  border-width: 3px;
+  border-color: var(--gold);
+  box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+}
+
+.overview-team-logo-wrap {
+  width: clamp(70px, 10vw, 120px);
+  height: clamp(70px, 10vw, 120px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.3);
+}
+.overview-team-card.team-a .overview-team-logo-wrap {
+  border: 3px solid var(--blue);
+  box-shadow: 0 0 24px var(--blue-glow);
+}
+.overview-team-card.team-b .overview-team-logo-wrap {
+  border: 3px solid var(--red);
+  box-shadow: 0 0 24px var(--red-glow);
+}
+.overview-team-logo {
+  width: 75%; height: 75%;
+  object-fit: contain;
+}
+.overview-team-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.overview-team-card.team-a .overview-team-name { color: #93c5fd; }
+.overview-team-card.team-b .overview-team-name { color: #fca5a5; }
+
+.overview-score-big {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(3.5rem, 8vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  margin: 8px 0 16px 0;
+  font-variant-numeric: tabular-nums;
+}
+.overview-team-card.team-a .overview-score-big { color: #93c5fd; text-shadow: 0 0 35px var(--blue-glow); }
+.overview-team-card.team-b .overview-score-big { color: #fca5a5; text-shadow: 0 0 35px var(--red-glow); }
+
+/* Stats grid */
+.overview-stats-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.overview-stat-box {
+  background: rgba(8, 12, 20, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+.overview-stat-label {
+  font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.overview-stat-value {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-weight: 700;
+  color: var(--text);
+}
+.overview-stat-value.gold { color: var(--gold); }
+.overview-stat-value.red { color: #f87171; }
+
+/* Timeline list of goals */
+.overview-timeline-section {
+  width: 100%;
+  flex: 1;
+  background: rgba(8, 12, 20, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.overview-timeline-heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.overview-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: 160px;
+}
+.overview-event-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: clamp(0.8rem, 1vw, 0.95rem);
+  font-weight: 600;
+}
+.overview-event-pill.goal {
+  border-left: 3px solid var(--green);
+  color: #86efac;
+}
+.overview-event-time {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+.overview-events-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px 0;
+  text-align: center;
+}
+
+/* Center VS divider */
+.overview-center-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 0 10px;
+}
+.overview-vs-circle {
+  width: clamp(50px, 6vw, 70px);
+  height: clamp(50px, 6vw, 70px);
+  border-radius: 50%;
+  background: #1e293b;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
+  color: var(--gold);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+.overview-ft-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- Fixed Top-Right Fullscreen Toggle -->
+<button class="top-fullscreen-btn" id="fsToggleBtn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+  ⛶ Fullscreen
+</button>
+
+<div class="container">
+  <!-- Title -->
+  <div class="title-bar">
+    <div class="event-title" id="eventTitle">Robot Soccer Championship</div>
+    <div class="match-status-badge ready" id="statusBadge">READY</div>
+  </div>
+
+  <!-- Scoreboard -->
+  <div class="scoreboard">
+    <!-- Team A -->
+    <div class="team team-a">
+      <div class="team-logo-wrap">
+        <img class="team-logo" id="logoA" src="" alt="" style="display:none">
+        <span class="team-logo-placeholder" id="logoPlaceholderA">🤖</span>
+      </div>
+      <div class="team-name-box" id="nameA">Team Alpha</div>
+    </div>
+
+    <!-- Center: Scores + Timer -->
+    <div class="center-area">
+      <div class="scores">
+        <div class="score team-a-score" id="scoreA">0</div>
+        <div class="separator">:</div>
+        <div class="score team-b-score" id="scoreB">0</div>
+      </div>
+      <div class="timer-section">
+        <div class="timer-value" id="timerValue">10:00</div>
+        <div class="timer-bar-track">
+          <div class="timer-bar-fill" id="timerBar" style="width:100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team B -->
+    <div class="team team-b">
+      <div class="team-logo-wrap">
+        <img class="team-logo" id="logoB" src="" alt="" style="display:none">
+        <span class="team-logo-placeholder" id="logoPlaceholderB">🤖</span>
+      </div>
+      <div class="team-name-box" id="nameB">Team Beta</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="conn-indicator">
+      <span class="conn-dot" id="connDot"></span>
+      <span id="connText">Connecting…</span>
+    </div>
+    <button class="fullscreen-btn" id="fsBtn" onclick="toggleFullscreen()">⛶ Full Screen</button>
+  </div>
+</div>
+
+<!-- Times Up overlay -->
+<div class="timesup-overlay" id="timesupOverlay">
+  <div class="timesup-text">TIME'S UP!</div>
+</div>
+
+<!-- Match Overview / Summary Screen -->
+<div class="overview-overlay" id="matchOverviewOverlay">
+  <div class="overview-header">
+    <div class="overview-badge">🏁 Match Completed</div>
+    <div class="overview-title" id="overviewEventTitle">Robot Soccer Championship</div>
+    <div class="overview-result-banner" id="overviewResultBanner">TEAM ALPHA WINS</div>
+  </div>
+
+  <div class="overview-split">
+    <!-- Team 1 / Left -->
+    <div class="overview-team-card team-a" id="overviewCardA">
+      <div class="overview-team-logo-wrap">
+        <img class="overview-team-logo" id="overviewLogoA" src="" alt="" style="display:none">
+        <span class="team-logo-placeholder" id="overviewLogoPlaceholderA">🤖</span>
+      </div>
+      <div class="overview-team-name" id="overviewNameA">Team Alpha</div>
+      <div class="overview-score-big" id="overviewScoreA">0</div>
+      
+      <div class="overview-stats-grid">
+        <div class="overview-stat-box">
+          <div class="overview-stat-label">Total Goals</div>
+          <div class="overview-stat-value gold" id="overviewGoalsA">0</div>
+        </div>
+        <div class="overview-stat-box">
+          <div class="overview-stat-label">Penalties</div>
+          <div class="overview-stat-value red" id="overviewPenaltiesA">0</div>
+        </div>
+      </div>
+
+      <div class="overview-timeline-section">
+        <div class="overview-timeline-heading">
+          <span>⚽</span>
+          <span>Goal Timeline</span>
+        </div>
+        <div class="overview-events-list" id="overviewEventsA">
+          <div class="overview-events-empty">No goals scored</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center VS -->
+    <div class="overview-center-divider">
+      <div class="overview-vs-circle">VS</div>
+      <div class="overview-ft-label">FULL TIME</div>
+    </div>
+
+    <!-- Team 2 / Right -->
+    <div class="overview-team-card team-b" id="overviewCardB">
+      <div class="overview-team-logo-wrap">
+        <img class="overview-team-logo" id="overviewLogoB" src="" alt="" style="display:none">
+        <span class="team-logo-placeholder" id="overviewLogoPlaceholderB">🤖</span>
+      </div>
+      <div class="overview-team-name" id="overviewNameB">Team Beta</div>
+      <div class="overview-score-big" id="overviewScoreB">0</div>
+
+      <div class="overview-stats-grid">
+        <div class="overview-stat-box">
+          <div class="overview-stat-label">Total Goals</div>
+          <div class="overview-stat-value gold" id="overviewGoalsB">0</div>
+        </div>
+        <div class="overview-stat-box">
+          <div class="overview-stat-label">Penalties</div>
+          <div class="overview-stat-value red" id="overviewPenaltiesB">0</div>
+        </div>
+      </div>
+
+      <div class="overview-timeline-section">
+        <div class="overview-timeline-heading">
+          <span>⚽</span>
+          <span>Goal Timeline</span>
+        </div>
+        <div class="overview-events-list" id="overviewEventsB">
+          <div class="overview-events-empty">No goals scored</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let state = null;
+let clockOffset = 0;
+let prevScoreA = null;
+let prevScoreB = null;
+let timesupShown = false;
+
+const $ = id => document.getElementById(id);
+
+// ── Connection ──────────────────────────────────
+socket.on('connect', () => {
+  $('connDot').classList.add('ok');
+  $('connText').textContent = 'Live';
+});
+socket.on('disconnect', () => {
+  $('connDot').classList.remove('ok');
+  $('connText').textContent = 'Reconnecting…';
+});
+
+// ── State sync ──────────────────────────────────
+socket.on('state', (s) => {
+  state = s;
+  clockOffset = (s.timer.serverTime || Date.now()) - Date.now();
+  renderState();
+});
+
+socket.on('timerEnd', () => {
+  showTimesUp();
+});
+
+function renderState() {
+  if (!state) return;
+
+  // Event title
+  $('eventTitle').textContent = state.eventTitle;
+
+  // Team names
+  $('nameA').textContent = state.teamA.name;
+  $('nameB').textContent = state.teamB.name;
+
+  // Logos
+  if (state.teamA.logo) {
+    $('logoA').src = state.teamA.logo;
+    $('logoA').style.display = 'block';
+    $('logoPlaceholderA').style.display = 'none';
+  } else {
+    $('logoA').style.display = 'none';
+    $('logoPlaceholderA').style.display = '';
+  }
+  if (state.teamB.logo) {
+    $('logoB').src = state.teamB.logo;
+    $('logoB').style.display = 'block';
+    $('logoPlaceholderB').style.display = 'none';
+  } else {
+    $('logoB').style.display = 'none';
+    $('logoPlaceholderB').style.display = '';
+  }
+
+  // Scores with pop animation
+  const sA = $('scoreA');
+  const sB = $('scoreB');
+  if (prevScoreA !== null && prevScoreA !== state.teamA.score) {
+    sA.classList.remove('pop');
+    void sA.offsetWidth; // reflow
+    sA.classList.add('pop');
+  }
+  if (prevScoreB !== null && prevScoreB !== state.teamB.score) {
+    sB.classList.remove('pop');
+    void sB.offsetWidth;
+    sB.classList.add('pop');
+  }
+  sA.textContent = state.teamA.score;
+  sB.textContent = state.teamB.score;
+  prevScoreA = state.teamA.score;
+  prevScoreB = state.teamB.score;
+
+  // Status badge
+  const badge = $('statusBadge');
+  badge.className = 'match-status-badge ' + state.matchStatus;
+  const labels = { ready: 'READY', live: '● LIVE', paused: 'PAUSED', ended: 'FULL TIME' };
+  badge.textContent = labels[state.matchStatus] || state.matchStatus.toUpperCase();
+
+  // Hide times-up and overview overlay on reset
+  if (state.matchStatus === 'ready') {
+    hideMatchOverview();
+  }
+
+  // If match status is ended, overview is active, re-sync overview values
+  if (overviewShown) {
+    updateOverviewContent();
+  }
+
+  updateTimer();
+}
+
+// ── Timer ────────────────────────────────────────
+function getRemaining() {
+  if (!state) return 0;
+  if (state.timer.running && state.timer.lastUpdated) {
+    const now = Date.now() + clockOffset;
+    const elapsed = (now - state.timer.lastUpdated) / 1000;
+    return Math.max(0, state.timer.remaining - elapsed);
+  }
+  return Math.max(0, state.timer.remaining);
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function updateTimer() {
+  if (!state) return;
+  const remaining = getRemaining();
+  const duration = state.timer.duration || 600;
+  const pct = duration > 0 ? (remaining / duration) * 100 : 0;
+
+  const tv = $('timerValue');
+  tv.textContent = formatTime(remaining);
+
+  // Timer classes
+  tv.className = 'timer-value';
+  const bar = $('timerBar');
+  bar.className = 'timer-bar-fill';
+
+  if (state.matchStatus === 'ended') {
+    tv.classList.add('ended');
+    bar.classList.add('critical');
+  } else if (state.timer.running) {
+    if (remaining <= 10) {
+      tv.classList.add('critical');
+      bar.classList.add('critical');
+    } else if (remaining <= 30) {
+      tv.classList.add('low');
+      bar.classList.add('low');
+    } else {
+      tv.classList.add('running');
+    }
+  }
+
+  bar.style.width = pct + '%';
+
+  // Auto-show times-up when timer reaches 0 while running
+  if (state.timer.running && remaining <= 0 && !timesupShown) {
+    showTimesUp();
+  }
+}
+
+setInterval(updateTimer, 100);
+
+// ── Times Up & Automated Match Overview Transition ─────────
+let overviewShown = false;
+let timesupTimer = null;
+
+function showTimesUp() {
+  if (timesupShown) return;
+  timesupShown = true;
+  const overlay = $('timesupOverlay');
+  overlay.classList.add('show');
+
+  // Wait exactly 5 seconds, then automatically transition to Match Overview
+  clearTimeout(timesupTimer);
+  timesupTimer = setTimeout(() => {
+    overlay.classList.remove('show');
+    showMatchOverview();
+  }, 5000);
+}
+
+function showMatchOverview() {
+  overviewShown = true;
+  updateOverviewContent();
+  $('matchOverviewOverlay').classList.add('show');
+}
+
+function hideMatchOverview() {
+  overviewShown = false;
+  timesupShown = false;
+  clearTimeout(timesupTimer);
+  $('timesupOverlay').classList.remove('show');
+  $('matchOverviewOverlay').classList.remove('show');
+}
+
+function updateOverviewContent() {
+  if (!state) return;
+
+  $('overviewEventTitle').textContent = state.eventTitle || 'Robot Soccer Championship';
+
+  const scoreA = state.teamA.score || 0;
+  const scoreB = state.teamB.score || 0;
+  const penaltiesA = state.teamA.penalties || 0;
+  const penaltiesB = state.teamB.penalties || 0;
+
+  $('overviewNameA').textContent = state.teamA.name || 'Team 1';
+  $('overviewNameB').textContent = state.teamB.name || 'Team 2';
+  $('overviewScoreA').textContent = scoreA;
+  $('overviewScoreB').textContent = scoreB;
+  $('overviewGoalsA').textContent = scoreA;
+  $('overviewGoalsB').textContent = scoreB;
+  $('overviewPenaltiesA').textContent = penaltiesA;
+  $('overviewPenaltiesB').textContent = penaltiesB;
+
+  // Winner banner & highlights
+  const banner = $('overviewResultBanner');
+  const cardA = $('overviewCardA');
+  const cardB = $('overviewCardB');
+  cardA.classList.remove('winner');
+  cardB.classList.remove('winner');
+
+  if (scoreA > scoreB) {
+    banner.textContent = `🏆 ${state.teamA.name.toUpperCase()} WINS!`;
+    banner.className = 'overview-result-banner team-a-win';
+    cardA.classList.add('winner');
+  } else if (scoreB > scoreA) {
+    banner.textContent = `🏆 ${state.teamB.name.toUpperCase()} WINS!`;
+    banner.className = 'overview-result-banner team-b-win';
+    cardB.classList.add('winner');
+  } else {
+    banner.textContent = '🤝 MATCH DRAWN!';
+    banner.className = 'overview-result-banner draw';
+  }
+
+  // Logos
+  if (state.teamA.logo) {
+    $('overviewLogoA').src = state.teamA.logo;
+    $('overviewLogoA').style.display = 'block';
+    $('overviewLogoPlaceholderA').style.display = 'none';
+  } else {
+    $('overviewLogoA').style.display = 'none';
+    $('overviewLogoPlaceholderA').style.display = '';
+  }
+
+  if (state.teamB.logo) {
+    $('overviewLogoB').src = state.teamB.logo;
+    $('overviewLogoB').style.display = 'block';
+    $('overviewLogoPlaceholderB').style.display = 'none';
+  } else {
+    $('overviewLogoB').style.display = 'none';
+    $('overviewLogoPlaceholderB').style.display = '';
+  }
+
+  populateGoalTimelines();
+}
+
+function populateGoalTimelines() {
+  const match = state.currentMatch;
+  const events = (match && (match.events || match.match_events)) || [];
+  const startMs = match && match.startTime ? new Date(match.startTime).getTime() : null;
+
+  const eventsA = [];
+  const eventsB = [];
+
+  events.forEach((ev) => {
+    if (ev.type === 'goal') {
+      let timeStr = '00:00';
+      if (ev.matchTime) {
+        timeStr = ev.matchTime;
+      } else if (startMs && ev.timestamp) {
+        const diffSec = Math.max(0, Math.floor((new Date(ev.timestamp).getTime() - startMs) / 1000));
+        timeStr = formatTime(diffSec);
+      } else if (ev.timestamp) {
+        const d = new Date(ev.timestamp);
+        timeStr = `${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+      }
+
+      if (ev.team === 'team1' || ev.team === 'a') {
+        eventsA.push({ time: timeStr, score: ev.team1_score });
+      } else {
+        eventsB.push({ time: timeStr, score: ev.team2_score });
+      }
+    }
+  });
+
+  const listA = $('overviewEventsA');
+  const listB = $('overviewEventsB');
+
+  if (eventsA.length === 0) {
+    listA.innerHTML = '<div class="overview-events-empty">No goals scored</div>';
+  } else {
+    listA.innerHTML = eventsA.map((g, idx) => `
+      <div class="overview-event-pill goal">
+        <span>⚽ Goal #${idx + 1}</span>
+        <span class="overview-event-time">${g.time}</span>
+      </div>
+    `).join('');
+  }
+
+  if (eventsB.length === 0) {
+    listB.innerHTML = '<div class="overview-events-empty">No goals scored</div>';
+  } else {
+    listB.innerHTML = eventsB.map((g, idx) => `
+      <div class="overview-event-pill goal">
+        <span>⚽ Goal #${idx + 1}</span>
+        <span class="overview-event-time">${g.time}</span>
+      </div>
+    `).join('');
+  }
+}
+
+// ── Remote control signals ───────────────────────
+socket.on('hideOverview', () => hideMatchOverview());
+socket.on('showOverview', () => showMatchOverview());
+
+// ── Fullscreen Toggle Logic ─────────────────────────
+function toggleFullscreen() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
+function updateFullscreenBtn() {
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const topBtn = document.getElementById('fsToggleBtn');
+  if (topBtn) {
+    topBtn.textContent = isFs ? '✖ Exit Fullscreen' : '⛶ Fullscreen';
+  }
+  const bottomBtn = $('fsBtn');
+  if (bottomBtn) {
+    bottomBtn.textContent = isFs ? '⛶ Exit Full Screen' : '⛶ Full Screen';
+  }
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
+
+// ── Hide cursor after inactivity ────────────────
+let cursorTimer;
+document.addEventListener('mousemove', () => {
+  document.body.style.cursor = 'default';
+  clearTimeout(cursorTimer);
+  cursorTimer = setTimeout(() => { document.body.style.cursor = 'none'; }, 3000);
+});
+</script>
+</body>
+</html>
+

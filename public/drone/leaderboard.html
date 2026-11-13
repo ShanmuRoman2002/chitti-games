@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drone Racing - Leaderboard & Standings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080c14;
+  --surface: #111827;
+  --surface-row: #161f30;
+  --surface-hover: #1e293b;
+  --border: #30363d;
+  --border-row: #1f2937;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.4);
+  --gold-bg: rgba(251, 191, 36, 0.1);
+  --cyan: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.4);
+  --purple: #c084fc;
+  --purple-glow: rgba(192, 132, 252, 0.4);
+  --green: #22c55e;
+  --green-glow: rgba(34, 197, 94, 0.4);
+  --red: #ef4444;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+  padding-bottom: 80px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container, .navbar, .card {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Top Navigation Bar ────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-icon {
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.7));
+}
+.brand h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.brand .sub {
+  font-size: 0.75rem;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nav-link {
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.nav-link:hover {
+  color: var(--text);
+  border-color: var(--muted);
+  background: var(--surface-hover);
+}
+.nav-link.active {
+  background: var(--gold-bg);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+.nav-link.switch-game {
+  border-color: #3b82f6;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.1);
+}
+.nav-link.switch-game:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #60a5fa;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ── Page Header & Stats Banner ────────────────────── */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.page-title h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.page-title p {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.page-title p strong {
+  color: var(--cyan);
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-refresh {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.btn-refresh:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(0, 229, 255, 0.1);
+}
+
+/* ── Hero Stats Row ────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.stat-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+.stat-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--text);
+}
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ── Table Card & Search ───────────────────────────── */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  background: #0d121f;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+}
+.search-box input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  width: 100%;
+  outline: none;
+}
+.search-box input::placeholder {
+  color: var(--muted);
+}
+.badge-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+}
+
+/* ── IPL-Style Points Table ────────────────────────── */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+.points-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.points-table thead th {
+  background: #0c111c;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 14px 18px;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.points-table thead th.text-center { text-align: center; }
+.points-table thead th.text-right { text-align: right; }
+
+.points-table tbody tr {
+  background: var(--surface-row);
+  border-bottom: 1px solid var(--border-row);
+  transition: all 0.2s ease;
+}
+.points-table tbody tr:hover {
+  background: var(--surface-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Top 3 Ranks Highlights */
+.points-table tbody tr.rank-1 {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.12) 0%, var(--surface-row) 50%);
+  border-left: 4px solid var(--gold);
+}
+.points-table tbody tr.rank-2 {
+  background: linear-gradient(90deg, rgba(203, 213, 225, 0.08) 0%, var(--surface-row) 50%);
+  border-left: 4px solid #cbd5e1;
+}
+.points-table tbody tr.rank-3 {
+  background: linear-gradient(90deg, rgba(217, 119, 6, 0.08) 0%, var(--surface-row) 50%);
+  border-left: 4px solid #d97706;
+}
+
+.points-table td {
+  padding: 16px 18px;
+  font-size: 0.95rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.points-table td.text-center { text-align: center; }
+.points-table td.text-right { text-align: right; }
+
+/* Rank Badge */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.rank-1 .rank-badge {
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  color: #0b0f19;
+  border: none;
+  box-shadow: 0 0 14px var(--gold-glow);
+}
+.rank-2 .rank-badge {
+  background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+  color: #0b0f19;
+  border: none;
+}
+.rank-3 .rank-badge {
+  background: linear-gradient(135deg, #d97706, #78350f);
+  color: #fff;
+  border: none;
+}
+
+/* Pilot Cell with Avatar */
+.pilot-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pilot-avatar-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 229, 255, 0.1);
+  border: 2px solid rgba(0, 229, 255, 0.3);
+  font-size: 1.5rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.pilot-avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pilot-meta {
+  display: flex;
+  flex-direction: column;
+}
+.pilot-name-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  line-height: 1.1;
+}
+.pilot-sub-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Numbers */
+.num-bold {
+  font-family: 'Orbitron', monospace;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.num-wins {
+  color: var(--gold);
+}
+.num-points {
+  color: var(--cyan);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.empty-state-icon {
+  font-size: 3.5rem;
+  margin-bottom: 12px;
+}
+</style>
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<!-- Top Navigation Bar -->
+<header class="navbar">
+  <div class="brand">
+    <span class="brand-icon">🛸</span>
+    <div>
+      <h1>Drone Racing</h1>
+      <div class="sub">Sky Battle Championship</div>
+    </div>
+  </div>
+  <nav class="nav-links">
+    <a href="/drone/dashboard" class="nav-link">📝 Dashboard</a>
+    <a href="/drone/match" class="nav-link">⚔️ Matchmaker</a>
+    <a href="/drone/control" class="nav-link">🎛️ Control Panel</a>
+    <a href="/drone/leaderboard" class="nav-link active">🏆 Leaderboard</a>
+    <a href="/drone/display" target="_blank" class="nav-link">📺 TV Display</a>
+    <a href="/dashboard" class="nav-link switch-game">⚽ Soccer</a>
+    <a href="/balloon/dashboard" class="nav-link switch-game">🎈 Balloon</a>
+    <a href="/battlebots/dashboard" class="nav-link switch-game">🤖 BattleBots</a>
+  </nav>
+</header>
+
+<main class="container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-title">
+      <h2>🏆 Championship Standings</h2>
+      <p>Standard Scoring: Sorted primarily by <strong>Wins (Highest First)</strong>, tie-breaker: <strong>Total Points (Highest First)</strong>.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" onclick="loadLeaderboard()">
+        🔄 Refresh Table
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Stats Row -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">🛸</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statPilotsCount">0</div>
+        <div class="stat-label">Registered Pilots</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">🏁</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statMatchesCount">0</div>
+        <div class="stat-label">Matches Completed</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">👑</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statTopPilot" style="font-size: 1.25rem; font-family: 'Rajdhani', sans-serif;">--</div>
+        <div class="stat-label">Current Sky Champion</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statTotalPoints">0</div>
+        <div class="stat-label">Total Points Scored</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Points Table Card -->
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search pilot by name, city, grade..." oninput="filterTable()">
+      </div>
+      <div class="badge-count" id="tableCountBadge">Showing 0 Pilots</div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="points-table">
+        <thead>
+          <tr>
+            <th class="text-center" style="width: 70px;">Rank</th>
+            <th>Pilot / Craft</th>
+            <th>Grade / City</th>
+            <th class="text-center">Matches</th>
+            <th class="text-center">Wins 🏆</th>
+            <th class="text-center">Total Points</th>
+            <th class="text-center">Win Rate</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+let fullLeaderboard = [];
+const socket = io();
+
+// Auto-refresh when a match ends
+socket.on('drone_matchEnded', () => {
+  loadLeaderboard();
+});
+
+async function loadLeaderboard() {
+  try {
+    const res = await fetch('/api/drone/leaderboard');
+    if (!res.ok) throw new Error('Failed to load drone leaderboard');
+    fullLeaderboard = await res.json();
+    renderLeaderboard(fullLeaderboard);
+    updateStatsCards(fullLeaderboard);
+  } catch (err) {
+    console.error('Error fetching drone leaderboard:', err);
+  }
+}
+
+function updateStatsCards(data) {
+  document.getElementById('statPilotsCount').textContent = data.length;
+
+  let totalPoints = 0;
+  let totalMatches = 0;
+  data.forEach(p => {
+    totalPoints += (p.totalPoints || 0);
+    totalMatches += (p.matchesPlayed || 0);
+  });
+  // Since each 1v1 match has 2 pilots, total matches completed is roughly sum / 2
+  const approxMatches = Math.round(totalMatches / 2);
+  document.getElementById('statMatchesCount').textContent = approxMatches;
+  document.getElementById('statTotalPoints').textContent = totalPoints;
+
+  if (data.length > 0 && data[0].wins > 0) {
+    document.getElementById('statTopPilot').textContent = data[0].name;
+  } else if (data.length > 0) {
+    document.getElementById('statTopPilot').textContent = data[0].name;
+  } else {
+    document.getElementById('statTopPilot').textContent = '--';
+  }
+}
+
+function renderLeaderboard(data) {
+  const tbody = document.getElementById('leaderboardBody');
+  const countBadge = document.getElementById('tableCountBadge');
+  countBadge.textContent = `Showing ${data.length} Pilots`;
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="empty-state">
+          <div class="empty-state-icon">🛸</div>
+          <h3>No Leaderboard Records Found</h3>
+          <p>Register pilots and play matches to build the sky championship table.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = data.map((p, idx) => {
+    const rank = p.rank || (idx + 1);
+    const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+
+    let avatarHtml = `<div class="pilot-avatar-wrap">🛸</div>`;
+    if (p.avatar && (p.avatar.startsWith('data:') || p.avatar.startsWith('http') || p.avatar.startsWith('/'))) {
+      avatarHtml = `<div class="pilot-avatar-wrap"><img src="${p.avatar}" alt="${p.name}"></div>`;
+    } else if (p.avatar) {
+      avatarHtml = `<div class="pilot-avatar-wrap">${p.avatar}</div>`;
+    }
+
+    const winRate = p.matchesPlayed > 0 ? Math.round((p.wins / p.matchesPlayed) * 100) : 0;
+
+    return `
+      <tr class="${rankClass}">
+        <td class="text-center">
+          <span class="rank-badge">${rank}</span>
+        </td>
+        <td>
+          <div class="pilot-cell">
+            ${avatarHtml}
+            <div class="pilot-meta">
+              <span class="pilot-name-text">${p.name}</span>
+              <span class="pilot-sub-meta">${p.group ? 'Group ' + p.group : 'Autonomous / Pilot'}</span>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div style="font-weight: 600; font-size: 0.9rem;">${p.city || 'National'}</div>
+          <div style="font-size: 0.75rem; color: var(--muted);">${p.grade ? 'Grade ' + p.grade : 'Open Class'}</div>
+        </td>
+        <td class="text-center">
+          <span class="num-bold">${p.matchesPlayed || 0}</span>
+        </td>
+        <td class="text-center">
+          <span class="num-bold num-wins">${p.wins || 0}</span>
+        </td>
+        <td class="text-center">
+          <span class="num-bold num-points">${p.totalPoints || 0}</span>
+        </td>
+        <td class="text-center">
+          <span style="font-weight: 700; color: ${winRate >= 50 ? 'var(--green)' : 'var(--muted)'};">${winRate}%</span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterTable() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  if (!q) {
+    renderLeaderboard(fullLeaderboard);
+    return;
+  }
+  const filtered = fullLeaderboard.filter(p => {
+    return (p.name && p.name.toLowerCase().includes(q)) ||
+           (p.city && p.city.toLowerCase().includes(q)) ||
+           (p.grade && String(p.grade).toLowerCase().includes(q)) ||
+           (p.group && p.group.toLowerCase().includes(q));
+  });
+  renderLeaderboard(filtered);
+}
+
+// Initial load
+loadLeaderboard();
+</script>
+</body>
+</html>
+

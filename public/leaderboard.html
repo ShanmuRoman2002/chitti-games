@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Soccer - Points Table / Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080c14;
+  --surface: #111827;
+  --surface-row: #161f30;
+  --surface-hover: #1e293b;
+  --border: #30363d;
+  --border-row: #1f2937;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.35);
+  --blue: #3b82f6;
+  --blue-glow: rgba(59, 130, 246, 0.3);
+  --green: #22c55e;
+  --green-glow: rgba(34, 197, 94, 0.3);
+  --red: #ef4444;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+  padding-bottom: 80px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container, .navbar, .card {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Top Navigation Bar ────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.brand h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.brand .sub {
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nav-link {
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.nav-link:hover {
+  color: var(--text);
+  border-color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+}
+.nav-link.active {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ── Container ─────────────────────────────────────── */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Header Card ───────────────────────────────────── */
+.table-hero-card {
+  background: linear-gradient(135deg, rgba(22, 31, 48, 0.95), rgba(17, 24, 39, 0.95));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.table-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.trophy-badge {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.2), rgba(17, 24, 39, 0.8));
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: 0 0 20px var(--gold-glow);
+}
+.table-hero-title h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #fff;
+}
+.table-hero-title p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.hero-stats-chips {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip strong {
+  color: var(--text);
+  font-family: 'Orbitron', monospace;
+}
+
+/* ── IPL Table Container ───────────────────────────── */
+.table-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  overflow-x: auto;
+}
+
+/* Column Header Row */
+.table-head {
+  display: grid;
+  grid-template-columns: 70px 1fr 70px 70px 70px 70px 85px 85px 95px;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(13, 17, 23, 0.8);
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+@media (max-width: 900px) {
+  .table-head {
+    grid-template-columns: 50px 1fr 60px 60px 60px 60px 70px 70px 80px;
+    font-size: 0.75rem;
+    min-width: 760px;
+  }
+  .table-wrapper { overflow-x: scroll; }
+}
+
+.table-head div {
+  text-align: center;
+}
+.table-head .col-team {
+  text-align: left;
+  padding-left: 12px;
+}
+.table-head .col-pts {
+  color: var(--gold);
+}
+
+/* ── Rectangular Row Bars ──────────────────────────── */
+.points-rows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (max-width: 900px) {
+  .points-rows-list { min-width: 760px; }
+}
+
+.ipl-row-bar {
+  display: grid;
+  grid-template-columns: 70px 1fr 70px 70px 70px 70px 85px 85px 95px;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--surface-row);
+  border: 1px solid var(--border-row);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+@media (max-width: 900px) {
+  .ipl-row-bar {
+    grid-template-columns: 50px 1fr 60px 60px 60px 60px 70px 70px 80px;
+  }
+}
+
+.ipl-row-bar:hover {
+  background: var(--surface-hover);
+  border-color: var(--border);
+  transform: translateX(3px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* Top 4 Qualifiers glow marker (IPL style) */
+.ipl-row-bar.rank-1 {
+  border-left: 4px solid var(--gold);
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.08), var(--surface-row) 40%);
+}
+.ipl-row-bar.rank-2 {
+  border-left: 4px solid #94a3b8;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.08), var(--surface-row) 40%);
+}
+.ipl-row-bar.rank-3 {
+  border-left: 4px solid #d97706;
+  background: linear-gradient(90deg, rgba(217, 119, 6, 0.08), var(--surface-row) 40%);
+}
+.ipl-row-bar.rank-4 {
+  border-left: 4px solid var(--blue);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.08), var(--surface-row) 40%);
+}
+
+.col-rank-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rank-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.rank-1 .rank-badge {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+.rank-2 .rank-badge {
+  background: rgba(148, 163, 184, 0.2);
+  border-color: #94a3b8;
+  color: #fff;
+}
+.rank-3 .rank-badge {
+  background: rgba(217, 119, 6, 0.2);
+  border-color: #d97706;
+  color: #fb923c;
+}
+.rank-4 .rank-badge {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* Team Column */
+.team-col-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-left: 12px;
+  min-width: 0;
+}
+.team-bar-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.team-bar-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.team-bar-logo .preset-icon {
+  font-size: 1.5rem;
+}
+.team-bar-info {
+  min-width: 0;
+}
+.team-bar-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.5px;
+}
+.team-bar-students {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Numeric Stat Cells */
+.stat-cell {
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+.stat-cell.won { color: var(--green); font-weight: 700; }
+.stat-cell.lost { color: var(--red); }
+.stat-cell.points {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+/* Empty state */
+.empty-table {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">🏆</div>
+      <div>
+        <h1>Robot Soccer Scoreboard</h1>
+        <div class="sub">Tournament Standings & Leaderboard</div>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <a href="/dashboard" class="nav-link">📋 Dashboard</a>
+      <a href="/match" class="nav-link">⚔️ Matchmaker</a>
+      <a href="/leaderboard" class="nav-link active">🏆 Leaderboard</a>
+      <a href="/control" class="nav-link">🎮 Control Panel</a>
+      <a href="/display" target="_blank" class="nav-link">📺 TV Display</a>
+      <a href="/balloon/leaderboard" class="nav-link" style="border-color: rgba(251, 191, 36, 0.4); color: #fde047; background: rgba(251, 191, 36, 0.1);">🎈 Balloon Game</a>
+      <a href="/battlebots/leaderboard" class="nav-link" style="border-color: rgba(249, 115, 22, 0.4); color: #fb923c; background: rgba(249, 115, 22, 0.1);">🤖 Battle Bots</a>
+      <a href="/drone/leaderboard" class="nav-link" style="border-color: rgba(0, 229, 255, 0.4); color: #00e5ff; background: rgba(0, 229, 255, 0.1);">🛸 Drone Game</a>
+      <a href="/logout" class="nav-link">🚪 Logout</a>
+    </nav>
+  </header>
+
+  <!-- Table Hero Header -->
+  <div class="table-hero-card">
+    <div class="table-hero-title">
+      <div class="trophy-badge">🏆</div>
+      <div>
+        <h2>IPL-Style Points Table</h2>
+        <p>Rankings sorted dynamically by Points (PTS) then Goals Scored (GS).</p>
+      </div>
+    </div>
+    <div class="hero-stats-chips">
+      <div class="chip">Teams: <strong id="chipTeamsCount">0</strong></div>
+      <div class="chip">Matches: <strong id="chipMatchesCount">0</strong></div>
+      <a href="/match" class="nav-link" style="border-color:var(--gold); color:var(--gold); font-weight:700;">⚔️ Play Next Match</a>
+    </div>
+  </div>
+
+  <!-- Points Table -->
+  <div class="table-wrapper">
+    <!-- Header Row -->
+    <div class="table-head">
+      <div>POS</div>
+      <div class="col-team">TEAM</div>
+      <div>P</div>
+      <div>W</div>
+      <div>L</div>
+      <div>D</div>
+      <div>GS</div>
+      <div>PEN</div>
+      <div class="col-pts">PTS</div>
+    </div>
+
+    <!-- Rows List -->
+    <div class="points-rows-list" id="pointsRows">
+      <div class="empty-table">Loading tournament standings...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadLeaderboard() {
+  try {
+    const res = await fetch('/api/leaderboard');
+    if (!res.ok) throw new Error('Failed to fetch leaderboard');
+    const teams = await res.json();
+    renderLeaderboard(teams);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('pointsRows').innerHTML = `
+      <div class="empty-table" style="color:var(--red);">Error loading standings. Please ensure server is running.</div>
+    `;
+  }
+}
+
+function renderLeaderboard(teams) {
+  const container = document.getElementById('pointsRows');
+  const chipTeams = document.getElementById('chipTeamsCount');
+  const chipMatches = document.getElementById('chipMatchesCount');
+
+  chipTeams.textContent = teams.length;
+  let totalMatches = 0;
+  teams.forEach(t => totalMatches += (t.played || 0));
+  chipMatches.textContent = Math.floor(totalMatches / 2);
+
+  if (!teams || teams.length === 0) {
+    container.innerHTML = `
+      <div class="empty-table">
+        <p style="font-size:1.1rem; margin-bottom:6px;">No teams registered in the tournament yet.</p>
+        <a href="/dashboard" class="nav-link" style="display:inline-block; margin-top:8px;">+ Register Teams</a>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = teams.map((team, idx) => {
+    const rank = idx + 1;
+    const rankClass = rank <= 4 ? `rank-${rank}` : '';
+
+    const isImage = team.logo && (team.logo.startsWith('/') || team.logo.startsWith('http') || team.logo.startsWith('data:image'));
+    const logoHtml = isImage
+      ? `<img src="${escapeHtml(team.logo)}" alt="${escapeHtml(team.teamName || team.name)}">`
+      : `<span class="preset-icon">${team.logo || '🤖'}</span>`;
+
+    const s1 = team.student1?.name || '';
+    const s2 = team.student2?.name || '';
+    const studentsStr = [s1, s2].filter(Boolean).join(' & ');
+
+    return `
+      <div class="ipl-row-bar ${rankClass}">
+        <div class="col-rank-box">
+          <div class="rank-badge">${rank}</div>
+        </div>
+
+        <div class="team-col-box">
+          <div class="team-bar-logo">${logoHtml}</div>
+          <div class="team-bar-info">
+            <div class="team-bar-name">${escapeHtml(team.teamName || team.name)}</div>
+            ${studentsStr ? `<div class="team-bar-students">👥 ${escapeHtml(studentsStr)}</div>` : ''}
+          </div>
+        </div>
+
+        <div class="stat-cell">${team.played || 0}</div>
+        <div class="stat-cell won">${team.won || 0}</div>
+        <div class="stat-cell lost">${team.lost || 0}</div>
+        <div class="stat-cell">${team.drawn || 0}</div>
+        <div class="stat-cell">${team.goals_scored || 0}</div>
+        <div class="stat-cell">${team.penalties || 0}</div>
+        <div class="stat-cell points">${team.points || 0}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+loadLeaderboard();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scoreboard Control Panel</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #e6edf3; --muted: #8b949e;
+  --blue: #58a6ff; --red: #f85149; --green: #3fb950;
+  --amber: #e3b341; --purple: #bc8cff;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px; padding-bottom: 80px;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.header, .teams, .card, .copy-toast {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Header ─────────────────────────────────── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
+}
+.header h1 { font-size: 1.3rem; }
+.header .status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; color: var(--muted);
+}
+.header .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red); flex-shrink: 0;
+}
+.header .dot.connected { background: var(--green); }
+.header .actions { display: flex; gap: 8px; }
+.header .actions a, .header .actions button {
+  font-size: 0.8rem; padding: 6px 12px; border-radius: 6px;
+  text-decoration: none; border: 1px solid var(--border);
+  color: var(--muted); background: transparent; cursor: pointer;
+}
+.header .actions a:hover, .header .actions button:hover {
+  color: var(--text); border-color: var(--muted);
+}
+
+/* ── Cards ──────────────────────────────────── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; margin-bottom: 16px;
+}
+.card h2 {
+  font-size: 1rem; color: var(--muted); margin-bottom: 16px;
+  text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+}
+
+/* ── Teams row ──────────────────────────────── */
+.teams { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .teams { grid-template-columns: 1fr; } }
+
+.team-card { position: relative; }
+.team-card.team-a { border-left: 3px solid var(--blue); }
+.team-card.team-b { border-left: 3px solid var(--red); }
+
+.team-name-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+}
+.team-name-row input {
+  flex: 1; padding: 8px 12px; font-size: 0.95rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); outline: none;
+}
+.team-name-row input:focus { border-color: var(--blue); }
+.team-name-row button {
+  padding: 8px 12px; background: var(--border); color: var(--text);
+  border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+}
+
+/* ── Score controls ─────────────────────────── */
+.score-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; margin-bottom: 12px;
+}
+.score-btn {
+  width: 64px; height: 64px; font-size: 1.8rem; font-weight: 700;
+  border: 2px solid var(--border); border-radius: 12px;
+  background: var(--bg); color: var(--text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.score-btn:active { transform: scale(0.92); }
+.score-btn.plus { border-color: var(--green); color: var(--green); }
+.score-btn.plus:hover { background: #3fb95022; }
+.score-btn.minus { border-color: var(--red); color: var(--red); }
+.score-btn.minus:hover { background: #f8514922; }
+.score-display {
+  font-size: 2.5rem; font-weight: 800; min-width: 60px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-score-row {
+  display: flex; gap: 8px; align-items: center; justify-content: center;
+}
+.set-score-row label { font-size: 0.8rem; color: var(--muted); }
+.set-score-row input {
+  width: 60px; padding: 6px 8px; font-size: 0.9rem; text-align: center;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); outline: none;
+}
+.set-score-row button {
+  padding: 6px 12px; font-size: 0.8rem;
+  background: var(--border); color: var(--text);
+  border: none; border-radius: 6px; cursor: pointer;
+}
+
+/* ── Logo ───────────────────────────────────── */
+.logo-section {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.logo-preview {
+  width: 40px; height: 40px; border-radius: 6px;
+  object-fit: contain; background: var(--bg); border: 1px solid var(--border);
+}
+.logo-section label {
+  font-size: 0.8rem; color: var(--blue); cursor: pointer;
+  text-decoration: underline;
+}
+.logo-section input[type="file"] { display: none; }
+.logo-section .remove-logo {
+  font-size: 0.75rem; color: var(--red); cursor: pointer;
+  background: none; border: none; text-decoration: underline;
+}
+
+/* ── Timer controls ─────────────────────────── */
+.timer-display {
+  text-align: center; font-size: 2.2rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+.timer-display.running { color: var(--green); }
+.timer-display.paused { color: var(--amber); }
+.timer-display.ended { color: var(--red); }
+
+.timer-buttons {
+  display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.timer-btn {
+  padding: 12px 24px; font-size: 1rem; font-weight: 600;
+  border: none; border-radius: 8px; cursor: pointer;
+  transition: all 0.15s; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.timer-btn:active { transform: scale(0.95); }
+.timer-btn.start { background: var(--green); color: #000; }
+.timer-btn.pause { background: var(--amber); color: #000; }
+.timer-btn.reset { background: var(--border); color: var(--text); }
+
+.duration-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; flex-wrap: wrap;
+}
+.duration-row label { font-size: 0.85rem; color: var(--muted); }
+.duration-row input {
+  width: 70px; padding: 8px; font-size: 0.95rem; text-align: center;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); outline: none;
+}
+.duration-row button {
+  padding: 8px 16px; font-size: 0.85rem; font-weight: 600;
+  background: var(--purple); color: #fff;
+  border: none; border-radius: 6px; cursor: pointer;
+}
+
+/* ── Match controls ─────────────────────────── */
+.match-buttons {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+.match-btn {
+  padding: 14px 28px; font-size: 1rem; font-weight: 600;
+  border: 2px solid var(--border); border-radius: 10px;
+  background: transparent; cursor: pointer;
+  transition: all 0.15s; user-select: none; flex: 1; min-width: 140px;
+  -webkit-tap-highlight-color: transparent;
+}
+.match-btn:active { transform: scale(0.95); }
+.match-btn.undo { color: var(--amber); border-color: var(--amber); }
+.match-btn.undo:hover { background: #e3b34122; }
+.match-btn.reset-match { color: var(--red); border-color: var(--red); }
+.match-btn.reset-match:hover { background: #f8514922; }
+.match-btn.end-match { color: #ff7b72; border-color: #ff7b72; background: rgba(248, 81, 73, 0.1); }
+.match-btn.end-match:hover { background: #f8514933; }
+.match-btn.close-summary { color: #38bdf8; border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
+.match-btn.close-summary:hover { background: #38bdf833; }
+
+/* ── Goal & Penalty Actions ─────────────────── */
+.quick-action-row {
+  margin: 10px 0;
+  display: flex;
+  justify-content: center;
+}
+.btn-goal {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid var(--green);
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-goal:hover {
+  background: var(--green);
+  color: #000;
+  box-shadow: 0 0 14px rgba(63, 185, 80, 0.35);
+}
+
+.penalty-section {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.penalty-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.penalty-count {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--amber);
+}
+.penalty-btns {
+  display: flex;
+  gap: 6px;
+}
+.penalty-btn {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.penalty-btn.add {
+  border-color: rgba(227, 179, 65, 0.4);
+  color: var(--amber);
+  background: rgba(227, 179, 65, 0.1);
+}
+.penalty-btn.add:hover {
+  background: var(--amber);
+  color: #000;
+}
+.penalty-btn:hover:not(.add) {
+  border-color: var(--muted);
+}
+
+/* ── Settings ───────────────────────────────── */
+.settings-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.settings-row label {
+  font-size: 0.85rem; color: var(--muted); min-width: 90px;
+}
+.settings-row input {
+  flex: 1; padding: 8px 12px; font-size: 0.95rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); outline: none;
+}
+.settings-row button {
+  padding: 8px 16px; font-size: 0.85rem;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 6px; cursor: pointer;
+}
+
+/* ── Share ───────────────────────────────────── */
+.share-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.share-row input {
+  flex: 1; padding: 10px 14px; font-size: 0.9rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--muted); outline: none;
+}
+.share-row button {
+  padding: 10px 20px; font-size: 0.9rem; font-weight: 600;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 8px; cursor: pointer;
+  white-space: nowrap;
+}
+.copy-toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--green); color: #000; padding: 10px 24px;
+  border-radius: 8px; font-weight: 600; font-size: 0.9rem;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
+}
+.copy-toast.show { opacity: 1; }
+
+/* ── Status badge ───────────────────────────── */
+.match-status {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.match-status.ready { background: var(--border); color: var(--muted); }
+.match-status.live { background: #3fb95033; color: var(--green); }
+.match-status.paused { background: #e3b34133; color: var(--amber); }
+.match-status.ended { background: #f8514933; color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <h1>🤖 Scoreboard Control</h1>
+    <div class="status">
+      <span class="dot" id="connDot"></span>
+      <span id="connText">Connecting…</span>
+      &nbsp;·&nbsp;
+      <span class="match-status ready" id="matchBadge">READY</span>
+    </div>
+  </div>
+  <div class="actions">
+    <a href="/dashboard">📋 Dashboard</a>
+    <a href="/match">⚔️ Matchmaker</a>
+    <a href="/leaderboard">🏆 Leaderboard</a>
+    <a href="/display" target="_blank">📺 Display</a>
+    <a href="/balloon/control" style="border-color: rgba(251, 191, 36, 0.4); color: #fde047; background: rgba(251, 191, 36, 0.1);">🎈 Balloon Game</a>
+    <a href="/battlebots/control" style="border-color: rgba(249, 115, 22, 0.4); color: #fb923c; background: rgba(249, 115, 22, 0.1);">🤖 Battle Bots</a>
+    <a href="/drone/control" style="border-color: rgba(0, 229, 255, 0.4); color: #00e5ff; background: rgba(0, 229, 255, 0.1);">🛸 Drone Game</a>
+    <a href="/logout">Logout</a>
+  </div>
+</div>
+
+<!-- Teams -->
+<div class="teams">
+  <!-- Team A -->
+  <div class="card team-card team-a">
+    <h2>⬙ Team A</h2>
+    <div class="team-name-row">
+      <input type="text" id="nameA" placeholder="Team name">
+      <button onclick="saveName('a')">Save</button>
+    </div>
+    <div class="score-row">
+      <button class="score-btn minus" onclick="changeScore('a', -1)">−</button>
+      <div class="score-display" id="scoreA">0</div>
+      <button class="score-btn plus" onclick="recordGoal('a')">+</button>
+    </div>
+    <div class="quick-action-row">
+      <button class="btn-goal" onclick="recordGoal('a')">⚽ GOAL (+1)</button>
+    </div>
+    <div class="penalty-section">
+      <div class="penalty-info">
+        <span>⚠️ Penalties:</span>
+        <span class="penalty-count" id="penaltiesA">0</span>
+      </div>
+      <div class="penalty-btns">
+        <button class="penalty-btn" onclick="recordPenalty('a', -1)">−</button>
+        <button class="penalty-btn add" onclick="recordPenalty('a', 1)">+ Penalty</button>
+      </div>
+    </div>
+    <div class="set-score-row" style="margin-top:12px;">
+      <label>Set:</label>
+      <input type="number" id="setScoreA" min="0" value="0">
+      <button onclick="setScore('a')">Apply</button>
+    </div>
+    <div class="logo-section">
+      <img class="logo-preview" id="logoA" src="" alt="" style="display:none">
+      <label for="logoFileA">Upload Logo</label>
+      <input type="file" id="logoFileA" accept="image/*" onchange="uploadLogo('a', this)">
+      <button class="remove-logo" id="removeLogoA" style="display:none" onclick="removeLogo('a')">Remove</button>
+    </div>
+  </div>
+
+  <!-- Team B -->
+  <div class="card team-card team-b">
+    <h2>⬙ Team B</h2>
+    <div class="team-name-row">
+      <input type="text" id="nameB" placeholder="Team name">
+      <button onclick="saveName('b')">Save</button>
+    </div>
+    <div class="score-row">
+      <button class="score-btn minus" onclick="changeScore('b', -1)">−</button>
+      <div class="score-display" id="scoreB">0</div>
+      <button class="score-btn plus" onclick="recordGoal('b')">+</button>
+    </div>
+    <div class="quick-action-row">
+      <button class="btn-goal" onclick="recordGoal('b')">⚽ GOAL (+1)</button>
+    </div>
+    <div class="penalty-section">
+      <div class="penalty-info">
+        <span>⚠️ Penalties:</span>
+        <span class="penalty-count" id="penaltiesB">0</span>
+      </div>
+      <div class="penalty-btns">
+        <button class="penalty-btn" onclick="recordPenalty('b', -1)">−</button>
+        <button class="penalty-btn add" onclick="recordPenalty('b', 1)">+ Penalty</button>
+      </div>
+    </div>
+    <div class="set-score-row" style="margin-top:12px;">
+      <label>Set:</label>
+      <input type="number" id="setScoreB" min="0" value="0">
+      <button onclick="setScore('b')">Apply</button>
+    </div>
+    <div class="logo-section">
+      <img class="logo-preview" id="logoB" src="" alt="" style="display:none">
+      <label for="logoFileB">Upload Logo</label>
+      <input type="file" id="logoFileB" accept="image/*" onchange="uploadLogo('b', this)">
+      <button class="remove-logo" id="removeLogoB" style="display:none" onclick="removeLogo('b')">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Timer -->
+<div class="card">
+  <h2>⏱ Timer</h2>
+  <div class="timer-display" id="timerDisplay">10:00</div>
+  <div class="timer-buttons">
+    <button class="timer-btn start" id="btnStart" onclick="timerStart()">▶ Start</button>
+    <button class="timer-btn pause" id="btnPause" onclick="timerPause()" style="display:none">⏸ Pause</button>
+    <button class="timer-btn start" id="btnResume" onclick="timerStart()" style="display:none">▶ Resume</button>
+    <button class="timer-btn reset" onclick="timerReset()">↺ Reset Timer</button>
+  </div>
+  <div class="duration-row">
+    <label>Duration:</label>
+    <input type="number" id="durationMin" min="1" max="120" value="10" step="1"> min
+    <button onclick="setDuration()">Set</button>
+  </div>
+</div>
+
+<!-- Match controls -->
+<div class="card">
+  <h2>⚙ Match Controls</h2>
+  <div class="match-buttons">
+    <button class="match-btn undo" onclick="undo()">↩ Undo</button>
+    <button class="match-btn reset-match" onclick="resetMatch()">🔄 Reset Match</button>
+    <button class="match-btn end-match" id="btnEndMatch" onclick="endMatch()">🏁 End Match</button>
+    <button class="match-btn close-summary" id="btnCloseSummary" onclick="closeSummary()">📊 Close Summary / New Match</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="card">
+  <h2>🏷 Event Title</h2>
+  <div class="settings-row">
+    <input type="text" id="eventTitle" placeholder="Event title">
+    <button onclick="saveTitle()">Save</button>
+  </div>
+</div>
+
+<!-- Share -->
+<div class="card">
+  <h2>📡 Share Display Link</h2>
+  <div class="share-row">
+    <input type="text" id="shareUrl" readonly>
+    <button onclick="copyLink()">📋 Copy Link</button>
+  </div>
+</div>
+
+<div class="copy-toast" id="copyToast">✓ Link copied!</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let state = null;
+let clockOffset = 0;
+
+// ── DOM refs ────────────────────────────────────
+const $ = id => document.getElementById(id);
+const connDot = $('connDot');
+const connText = $('connText');
+const matchBadge = $('matchBadge');
+const scoreA = $('scoreA');
+const scoreB = $('scoreB');
+const nameA = $('nameA');
+const nameB = $('nameB');
+const logoA = $('logoA');
+const logoB = $('logoB');
+const removeLogoA = $('removeLogoA');
+const removeLogoB = $('removeLogoB');
+const timerDisplay = $('timerDisplay');
+const btnStart = $('btnStart');
+const btnPause = $('btnPause');
+const btnResume = $('btnResume');
+const durationMin = $('durationMin');
+const eventTitle = $('eventTitle');
+const shareUrl = $('shareUrl');
+const setScoreAInput = $('setScoreA');
+const setScoreBInput = $('setScoreB');
+const penaltiesA = $('penaltiesA');
+const penaltiesB = $('penaltiesB');
+
+// ── Connection status ───────────────────────────
+socket.on('connect', () => {
+  connDot.classList.add('connected');
+  connText.textContent = 'Connected';
+});
+socket.on('disconnect', () => {
+  connDot.classList.remove('connected');
+  connText.textContent = 'Disconnected';
+});
+
+// ── Set share URL ───────────────────────────────
+shareUrl.value = location.origin + '/display';
+
+// ── State sync ──────────────────────────────────
+socket.on('state', (s) => {
+  state = s;
+  clockOffset = (s.timer.serverTime || Date.now()) - Date.now();
+  renderState();
+});
+
+socket.on('timerEnd', () => {
+  // Visual/audio feedback could go here
+});
+
+function renderState() {
+  if (!state) return;
+
+  // Scores
+  scoreA.textContent = state.teamA.score;
+  scoreB.textContent = state.teamB.score;
+  setScoreAInput.value = state.teamA.score;
+  setScoreBInput.value = state.teamB.score;
+
+  // Penalties
+  if (penaltiesA) penaltiesA.textContent = (state.teamA && state.teamA.penalties) || 0;
+  if (penaltiesB) penaltiesB.textContent = (state.teamB && state.teamB.penalties) || 0;
+
+  // Names (only update if not focused)
+  if (document.activeElement !== nameA) nameA.value = state.teamA.name;
+  if (document.activeElement !== nameB) nameB.value = state.teamB.name;
+  if (document.activeElement !== eventTitle) eventTitle.value = state.eventTitle;
+
+  // Logos
+  if (state.teamA.logo) {
+    logoA.src = state.teamA.logo; logoA.style.display = 'block';
+    removeLogoA.style.display = 'inline';
+  } else {
+    logoA.style.display = 'none'; removeLogoA.style.display = 'none';
+  }
+  if (state.teamB.logo) {
+    logoB.src = state.teamB.logo; logoB.style.display = 'block';
+    removeLogoB.style.display = 'inline';
+  } else {
+    logoB.style.display = 'none'; removeLogoB.style.display = 'none';
+  }
+
+  // Duration
+  if (document.activeElement !== durationMin) {
+    durationMin.value = Math.round(state.timer.duration / 60);
+  }
+
+  // Timer buttons
+  if (state.timer.running) {
+    btnStart.style.display = 'none';
+    btnPause.style.display = '';
+    btnResume.style.display = 'none';
+  } else if (state.matchStatus === 'paused') {
+    btnStart.style.display = 'none';
+    btnPause.style.display = 'none';
+    btnResume.style.display = '';
+  } else {
+    btnStart.style.display = '';
+    btnPause.style.display = 'none';
+    btnResume.style.display = 'none';
+  }
+
+  // Match status badge
+  matchBadge.className = 'match-status ' + state.matchStatus;
+  matchBadge.textContent = state.matchStatus.toUpperCase();
+
+  // Timer class
+  timerDisplay.className = 'timer-display';
+  if (state.timer.running) timerDisplay.classList.add('running');
+  else if (state.matchStatus === 'paused') timerDisplay.classList.add('paused');
+  else if (state.matchStatus === 'ended') timerDisplay.classList.add('ended');
+
+  updateTimerText();
+}
+
+// ── Timer display loop ──────────────────────────
+function getRemaining() {
+  if (!state) return 0;
+  if (state.timer.running && state.timer.lastUpdated) {
+    const now = Date.now() + clockOffset;
+    const elapsed = (now - state.timer.lastUpdated) / 1000;
+    return Math.max(0, state.timer.remaining - elapsed);
+  }
+  return state.timer.remaining;
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function updateTimerText() {
+  timerDisplay.textContent = formatTime(getRemaining());
+}
+
+setInterval(updateTimerText, 200);
+
+// ── Actions ─────────────────────────────────────
+function recordGoal(team) { socket.emit('recordGoal', { team }); }
+function recordPenalty(team, delta = 1) { socket.emit('recordPenalty', { team, delta }); }
+function endMatch() {
+  if (confirm('End this match? Status will be saved as completed in tournament_db.json.')) {
+    socket.emit('endMatch');
+  }
+}
+function changeScore(team, delta) { socket.emit('updateScore', { team, delta }); }
+function setScore(team) {
+  const input = team === 'a' ? setScoreAInput : setScoreBInput;
+  socket.emit('setScore', { team, score: parseInt(input.value) || 0 });
+}
+function saveName(team) {
+  const input = team === 'a' ? nameA : nameB;
+  socket.emit('setTeamName', { team, name: input.value });
+}
+function saveTitle() { socket.emit('setEventTitle', eventTitle.value); }
+function setDuration() {
+  socket.emit('setDuration', Math.max(1, parseInt(durationMin.value) || 10) * 60);
+}
+function timerStart() { socket.emit('timerStart'); }
+function timerPause() { socket.emit('timerPause'); }
+function timerReset() { socket.emit('timerReset'); }
+function undo() { socket.emit('undo'); }
+function resetMatch() {
+  if (confirm('Reset scores and timer? This can be undone.')) socket.emit('resetMatch');
+}
+function closeSummary() {
+  if (confirm('Close match summary and prepare display for next match?')) {
+    socket.emit('dismissOverview');
+    socket.emit('resetMatch');
+  }
+}
+function removeLogo(team) { socket.emit('removeLogo', { team }); }
+
+async function uploadLogo(team, input) {
+  if (!input.files.length) return;
+  const form = new FormData();
+  form.append('logo', input.files[0]);
+  try {
+    const res = await fetch('/upload/' + team, { method: 'POST', body: form });
+    if (!res.ok) alert('Upload failed');
+  } catch (e) { alert('Upload error'); }
+  input.value = '';
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(shareUrl.value).then(() => {
+    const toast = $('copyToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }).catch(() => {
+    shareUrl.select();
+    document.execCommand('copy');
+  });
+}
+
+// ── Enter key support ───────────────────────────
+nameA.addEventListener('keydown', e => { if (e.key === 'Enter') saveName('a'); });
+nameB.addEventListener('keydown', e => { if (e.key === 'Enter') saveName('b'); });
+eventTitle.addEventListener('keydown', e => { if (e.key === 'Enter') saveTitle(); });
+durationMin.addEventListener('keydown', e => { if (e.key === 'Enter') setDuration(); });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battle Bots (Sumo) - Live Arena Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #060911;
+  --surface: #0e1422;
+  --surface-card: #141c2e;
+  --border: #243048;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.5);
+  --botA: #f97316;
+  --botA-glow: rgba(249, 115, 22, 0.55);
+  --botA-bg: rgba(249, 115, 22, 0.1);
+  --botB: #06b6d4;
+  --botB-glow: rgba(6, 182, 212, 0.55);
+  --botB-bg: rgba(6, 182, 212, 0.1);
+  --botC: #84cc16;
+  --botC-glow: rgba(132, 204, 22, 0.55);
+  --botC-bg: rgba(132, 204, 22, 0.1);
+  --green: #22c55e;
+  --red: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.6);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+  user-select: none;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Main Fullscreen TV Grid ───────────────────────── */
+.tv-layout {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  padding: clamp(14px, 2vh, 28px);
+  gap: clamp(10px, 1.8vh, 24px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Top Header Bar ────────────────────────────────── */
+.top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(8px, 1.2vh, 16px) clamp(16px, 2.5vw, 36px);
+  background: rgba(14, 20, 34, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.event-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.event-logo-icon {
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.7));
+}
+.event-title-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.4rem, 2.8vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  line-height: 1.1;
+}
+.event-subtitle-text {
+  font-size: clamp(0.75rem, 1.1vw, 1rem);
+  color: #fb923c;
+  letter-spacing: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Timer Center Badge in Top Header */
+.center-timer-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.status-pill {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(0.7rem, 1vw, 0.95rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  padding: 3px 18px;
+  border-radius: 20px;
+  margin-bottom: 2px;
+}
+.status-pill.ready { background: #334155; color: #cbd5e1; }
+.status-pill.live { background: rgba(34, 197, 94, 0.25); color: #4ade80; border: 1px solid var(--green); animation: pulse-live 1.5s infinite; }
+.status-pill.paused { background: rgba(249, 115, 22, 0.25); color: #fb923c; border: 1px solid var(--botA); }
+.status-pill.ended { background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid var(--red); }
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.03); }
+}
+
+.tv-countdown-clock {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2.8rem, 6vw, 5.5rem);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 4px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+}
+.tv-countdown-clock.running {
+  color: var(--botA);
+  text-shadow: 0 0 35px var(--botA-glow);
+}
+.tv-countdown-clock.ending {
+  color: var(--red);
+  text-shadow: 0 0 40px var(--red);
+  animation: flash-red 0.8s infinite;
+}
+@keyframes flash-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.match-rules-pill {
+  font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.4;
+}
+.match-rules-pill span.alert {
+  color: #f87171;
+  font-weight: 700;
+}
+
+/* ── 3-Way Arena Columns ───────────────────────────── */
+.arena-columns-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(14px, 2vw, 28px);
+  align-items: stretch;
+  width: 100%;
+  max-width: 1900px;
+  margin: 0 auto;
+}
+
+.player-column {
+  background: rgba(14, 20, 34, 0.88);
+  border-radius: 24px;
+  border: 3px solid var(--border);
+  padding: clamp(16px, 2.5vh, 32px) clamp(16px, 2vw, 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Bot Column A - Flame / Orange */
+.player-column.col-a {
+  border-color: var(--botA);
+  box-shadow: 0 0 35px rgba(249, 115, 22, 0.25), inset 0 0 40px rgba(249, 115, 22, 0.08);
+}
+.player-column.col-a .col-slot-badge {
+  color: #fb923c;
+  border-color: var(--botA);
+  background: var(--botA-bg);
+  box-shadow: 0 0 14px var(--botA-glow);
+}
+.player-column.col-a .avatar-ring {
+  border-color: var(--botA);
+  box-shadow: 0 0 35px var(--botA-glow);
+}
+
+/* Bot Column B - Ice / Cyan */
+.player-column.col-b {
+  border-color: var(--botB);
+  box-shadow: 0 0 35px rgba(6, 182, 212, 0.25), inset 0 0 40px rgba(6, 182, 212, 0.08);
+}
+.player-column.col-b .col-slot-badge {
+  color: #22d3ee;
+  border-color: var(--botB);
+  background: var(--botB-bg);
+  box-shadow: 0 0 14px var(--botB-glow);
+}
+.player-column.col-b .avatar-ring {
+  border-color: var(--botB);
+  box-shadow: 0 0 35px var(--botB-glow);
+}
+
+/* Bot Column C - Acid / Lime */
+.player-column.col-c {
+  border-color: var(--botC);
+  box-shadow: 0 0 35px rgba(132, 204, 22, 0.25), inset 0 0 40px rgba(132, 204, 22, 0.08);
+}
+.player-column.col-c .col-slot-badge {
+  color: #a3e635;
+  border-color: var(--botC);
+  background: var(--botC-bg);
+  box-shadow: 0 0 14px var(--botC-glow);
+}
+.player-column.col-c .avatar-ring {
+  border-color: var(--botC);
+  box-shadow: 0 0 35px var(--botC-glow);
+}
+
+/* Slot Badge */
+.col-slot-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(0.75rem, 1.2vw, 1.05rem);
+  font-weight: 900;
+  letter-spacing: 3px;
+  padding: 6px 22px;
+  border-radius: 30px;
+  border: 2px solid;
+  text-transform: uppercase;
+}
+
+/* Leader Crown Pill */
+.leader-crown-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(0.75rem, 1vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--gold);
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid var(--gold);
+  padding: 4px 14px;
+  border-radius: 20px;
+  box-shadow: 0 0 14px var(--gold-glow);
+  margin-top: 8px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.3s;
+}
+.leader-crown-tag.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Avatar Ring */
+.avatar-ring {
+  width: clamp(90px, 14vw, 180px);
+  height: clamp(90px, 14vw, 180px);
+  border-radius: 50%;
+  border: 4px solid;
+  background: #080c14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(3rem, 6vw, 6rem);
+  overflow: hidden;
+  margin: clamp(10px, 2vh, 20px) 0;
+  flex-shrink: 0;
+}
+.avatar-ring img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Bot Name & Info */
+.player-name-tv {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.6rem, 3.2vw, 3.2rem);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  word-break: break-word;
+}
+.player-meta-tv {
+  font-size: clamp(0.85rem, 1.3vw, 1.25rem);
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.player-meta-tv span.badge {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 10px;
+  border-radius: 6px;
+  color: #cbd5e1;
+}
+
+/* Huge Score Box */
+.tv-score-box {
+  width: 100%;
+  background: rgba(6, 9, 17, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: clamp(12px, 2vh, 24px) 16px;
+  margin-top: clamp(12px, 2vh, 20px);
+}
+.score-header-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(0.75rem, 1.1vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.score-number-display {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(4.5rem, 9vw, 8.5rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 35px rgba(255, 255, 255, 0.3);
+  margin: 6px 0;
+  font-variant-numeric: tabular-nums;
+}
+.col-a .score-number-display { color: var(--botA); text-shadow: 0 0 35px var(--botA-glow); }
+.col-b .score-number-display { color: var(--botB); text-shadow: 0 0 35px var(--botB-glow); }
+.col-c .score-number-display { color: var(--botC); text-shadow: 0 0 35px var(--botC-glow); }
+
+.score-reverse-hint {
+  font-size: clamp(0.68rem, 0.9vw, 0.85rem);
+  color: #f87171;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── Bottom Ticker Footer ──────────────────────────── */
+.bottom-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: rgba(14, 20, 34, 0.65);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  color: var(--muted);
+}
+.footer-badge {
+  color: #fb923c;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* ══════════════════════════════════════════════════════
+   POPUP 1: MASSIVE "TIME UP" OVERLAY (First 5 Seconds)
+   ══════════════════════════════════════════════════════ */
+.timeup-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(30, 10, 15, 0.96) 0%, rgba(4, 7, 14, 0.98) 100%);
+  backdrop-filter: blur(25px);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  padding: 30px;
+}
+.timeup-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.timeup-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes bounce-in {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.timeup-icon-siren {
+  font-size: clamp(4.5rem, 10vw, 8rem);
+  filter: drop-shadow(0 0 35px var(--red-glow));
+  animation: siren-wiggle 1s ease-in-out infinite alternate;
+  margin-bottom: 10px;
+}
+@keyframes siren-wiggle {
+  0% { transform: rotate(-8deg) scale(1); }
+  100% { transform: rotate(8deg) scale(1.1); }
+}
+
+.timeup-title-text {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(3.5rem, 9vw, 8rem);
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: var(--red);
+  text-transform: uppercase;
+  text-shadow: 0 0 50px var(--red-glow), 0 0 100px rgba(239, 68, 68, 0.5);
+  line-height: 1;
+  animation: pulse-timeup 0.9s infinite alternate;
+}
+@keyframes pulse-timeup {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.03); filter: brightness(1.2); }
+}
+
+.timeup-subtitle-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.2rem, 2.5vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #fff;
+  text-transform: uppercase;
+  margin-top: 14px;
+}
+
+.timeup-progress-wrapper {
+  margin-top: 30px;
+  width: clamp(280px, 45vw, 550px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  height: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.timeup-progress-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ef4444, #f97316);
+  box-shadow: 0 0 14px var(--botA-glow);
+  transition: width 5s linear;
+}
+.timeup-countdown-hint {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 10px;
+  letter-spacing: 1.5px;
+}
+
+/* ══════════════════════════════════════════════════════
+   POPUP 2: 3-COLUMN MATCH OVERVIEW & WINNER SUMMARY
+   ══════════════════════════════════════════════════════ */
+.summary-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(10, 16, 28, 0.96) 0%, rgba(4, 7, 14, 0.98) 100%);
+  backdrop-filter: blur(25px);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 3vh, 40px) clamp(20px, 3vw, 50px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.summary-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.summary-card-inner {
+  width: 100%;
+  max-width: 1600px;
+  max-height: 94vh;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.95), rgba(8, 12, 20, 0.98));
+  border: 2px solid var(--border);
+  border-radius: 28px;
+  padding: clamp(20px, 3vh, 36px) clamp(20px, 3vw, 44px);
+  box-shadow: 0 0 70px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow-y: auto;
+}
+
+.summary-header-wrap {
+  margin-bottom: 20px;
+}
+.summary-trophy-banner {
+  font-size: clamp(2.8rem, 5vw, 4.2rem);
+  filter: drop-shadow(0 0 25px rgba(251, 191, 36, 0.8));
+  line-height: 1;
+}
+.summary-winner-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.8rem, 3.6vw, 3.2rem);
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 35px var(--gold-glow);
+  margin-top: 6px;
+  line-height: 1.1;
+}
+.summary-winner-sub {
+  font-size: clamp(0.9rem, 1.2vw, 1.25rem);
+  color: #e2e8f0;
+  margin-top: 4px;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+/* 3-Column Split Screen in Summary */
+.summary-3col-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(14px, 2vw, 24px);
+  width: 100%;
+  margin: clamp(14px, 2vh, 24px) 0;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .summary-3col-grid { grid-template-columns: 1fr; }
+}
+
+.summary-col-card {
+  background: rgba(14, 20, 34, 0.85);
+  border-radius: 22px;
+  border: 2px solid var(--border);
+  padding: clamp(16px, 2.5vh, 28px) clamp(14px, 1.8vw, 22px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  position: relative;
+  transition: all 0.3s;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Winner Highlighting with Glowing Ring & Gold Aura */
+.summary-col-card.is-winner {
+  border: 3px solid var(--gold);
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.16) 0%, rgba(14, 20, 34, 0.95) 75%);
+  box-shadow: 0 0 45px var(--gold-glow), inset 0 0 30px rgba(251, 191, 36, 0.1);
+  transform: translateY(-8px) scale(1.02);
+}
+
+.summary-winner-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+  font-weight: 900;
+  letter-spacing: 2px;
+  padding: 5px 18px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.summary-col-card.is-winner .summary-winner-badge {
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  color: #080c14;
+  box-shadow: 0 0 16px var(--gold-glow);
+  animation: pulse-badge 1.8s infinite alternate;
+}
+@keyframes pulse-badge {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+.summary-col-card:not(.is-winner) .summary-winner-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.summary-avatar-wrap {
+  width: clamp(80px, 10vw, 130px);
+  height: clamp(80px, 10vw, 130px);
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  background: #080c14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(2.8rem, 4.5vw, 5rem);
+  overflow: hidden;
+  margin: 10px 0;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+}
+.summary-col-card.is-winner .summary-avatar-wrap {
+  border-color: var(--gold);
+  box-shadow: 0 0 30px var(--gold-glow);
+}
+.summary-avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.summary-player-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.3rem, 2.4vw, 2.2rem);
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.summary-player-meta {
+  font-size: clamp(0.78rem, 1vw, 1rem);
+  color: var(--muted);
+  margin-top: 3px;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.summary-score-box {
+  width: 100%;
+  background: rgba(6, 9, 17, 0.75);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 14px;
+}
+.summary-col-card.is-winner .summary-score-box {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+.summary-score-num {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2.6rem, 5vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.summary-col-card.is-winner .summary-score-num {
+  color: var(--gold);
+  text-shadow: 0 0 24px var(--gold-glow);
+}
+.summary-score-lbl {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 4px;
+}
+
+.btn-dismiss-summary {
+  padding: 12px 36px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  margin-top: 10px;
+}
+.btn-dismiss-summary:hover {
+  background: var(--gold);
+  color: #080c14;
+  border-color: var(--gold);
+  box-shadow: 0 0 20px var(--gold-glow);
+}
+
+/* ── Top-Right Fixed Fullscreen Toggle ─────────────── */
+.top-fullscreen-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: rgba(14, 20, 34, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  color: #fb923c;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 10px rgba(249, 115, 22, 0.2);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.top-fullscreen-btn:hover {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: #f97316;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(249, 115, 22, 0.4);
+}
+</style>
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<!-- Fixed Top-Right Fullscreen Toggle -->
+<button class="top-fullscreen-btn" id="fsToggleBtn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+  ⛶ Fullscreen
+</button>
+
+<div class="tv-layout">
+  <!-- Top Header Bar -->
+  <header class="top-header">
+    <div class="event-title-wrap">
+      <span class="event-logo-icon">🤖</span>
+      <div>
+        <div class="event-title-text" id="eventTitleDisplay">BATTLE BOTS SUMO ARENA</div>
+        <div class="event-subtitle-text">1v1v1 ROBOT SUMO CHAMPIONSHIP</div>
+      </div>
+    </div>
+
+    <!-- Centerpiece Timer & Status -->
+    <div class="center-timer-wrap">
+      <div class="status-pill ready" id="tvStatusPill">READY</div>
+      <div class="tv-countdown-clock" id="tvCountdown">10:00</div>
+    </div>
+
+    <!-- Match Rule Reminder -->
+    <div class="match-rules-pill">
+      <div>REVERSE SCORING</div>
+      <div>Ring Out: <span class="alert">+1 Fall</span></div>
+      <div>Least Falls = <span style="color:var(--gold); font-weight:700;">CHAMPION 🏆</span></div>
+    </div>
+  </header>
+
+  <!-- 3-Way Split Arena Columns -->
+  <main class="arena-columns-container">
+    <!-- Column A -->
+    <div class="player-column col-a" id="colA">
+      <div class="col-slot-badge">BOT A (FLAME)</div>
+      <div class="leader-crown-tag" id="crownA">👑 CURRENT LEADER</div>
+
+      <div class="avatar-ring" id="tvAvatarA">🤖</div>
+
+      <div>
+        <div class="player-name-tv" id="tvNameA">BOT A</div>
+        <div class="player-meta-tv" id="tvMetaA">
+          <span class="badge">Competitor</span>
+        </div>
+      </div>
+
+      <div class="tv-score-box">
+        <div class="score-header-label">RING OUTS (FALLS)</div>
+        <div class="score-number-display" id="tvScoreA">0</div>
+        <div class="score-reverse-hint">Falls Count</div>
+      </div>
+    </div>
+
+    <!-- Column B -->
+    <div class="player-column col-b" id="colB">
+      <div class="col-slot-badge">BOT B (ICE)</div>
+      <div class="leader-crown-tag" id="crownB">👑 CURRENT LEADER</div>
+
+      <div class="avatar-ring" id="tvAvatarB">🤖</div>
+
+      <div>
+        <div class="player-name-tv" id="tvNameB">BOT B</div>
+        <div class="player-meta-tv" id="tvMetaB">
+          <span class="badge">Challenger</span>
+        </div>
+      </div>
+
+      <div class="tv-score-box">
+        <div class="score-header-label">RING OUTS (FALLS)</div>
+        <div class="score-number-display" id="tvScoreB">0</div>
+        <div class="score-reverse-hint">Falls Count</div>
+      </div>
+    </div>
+
+    <!-- Column C -->
+    <div class="player-column col-c" id="colC">
+      <div class="col-slot-badge">BOT C (ACID)</div>
+      <div class="leader-crown-tag" id="crownC">👑 CURRENT LEADER</div>
+
+      <div class="avatar-ring" id="tvAvatarC">🤖</div>
+
+      <div>
+        <div class="player-name-tv" id="tvNameC">BOT C</div>
+        <div class="player-meta-tv" id="tvMetaC">
+          <span class="badge">Defender</span>
+        </div>
+      </div>
+
+      <div class="tv-score-box">
+        <div class="score-header-label">RING OUTS (FALLS)</div>
+        <div class="score-number-display" id="tvScoreC">0</div>
+        <div class="score-reverse-hint">Falls Count</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Bar -->
+  <footer class="bottom-footer">
+    <div>
+      <span class="footer-badge">BATTLE BOTS (SUMO) ARENA</span> • 1v1v1 Ring Battle
+    </div>
+    <div id="footerMatchStatus">
+      Match Status: Standby
+    </div>
+  </footer>
+</div>
+
+<!-- ========================================================= -->
+<!-- STAGE 1: MASSIVE "TIME UP" POPUP (Triggered Instantly)     -->
+<!-- ========================================================= -->
+<div class="timeup-overlay" id="timeUpOverlay">
+  <div class="timeup-card">
+    <div class="timeup-icon-siren">⏰</div>
+    <div class="timeup-title-text">TIME UP!</div>
+    <div class="timeup-subtitle-text">MATCH CONCLUDED • CALCULATING RING FALLS</div>
+
+    <div class="timeup-progress-wrapper">
+      <div class="timeup-progress-fill" id="timeUpProgressBar"></div>
+    </div>
+    <div class="timeup-countdown-hint" id="timeUpHint">Transitioning to Match Summary in 5s...</div>
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- STAGE 2: 3-COLUMN SPLIT MATCH OVERVIEW & WINNER SUMMARY   -->
+<!-- ========================================================= -->
+<div class="summary-overlay" id="summaryOverlay">
+  <div class="summary-card-inner">
+    <div class="summary-header-wrap">
+      <div class="summary-trophy-banner">🏆</div>
+      <div class="summary-winner-title" id="summaryWinnerTitle">MATCH OVERVIEW</div>
+      <div class="summary-winner-sub" id="summaryWinnerSubtitle">1v1v1 Sumo Arena Final Standings (Lowest Falls Wins)</div>
+    </div>
+
+    <!-- 3-Column Split Layout for the 3 Bots -->
+    <div class="summary-3col-grid" id="summaryColumnsGrid">
+      <!-- Injected by JavaScript -->
+    </div>
+
+    <button type="button" class="btn-dismiss-summary" id="dismissSummaryBtn">
+      ✕ Dismiss Summary
+    </button>
+  </div>
+</div>
+
+<script>
+const socket = io();
+let gameState = {
+  eventTitle: 'Battle Bots Sumo Arena',
+  timer: { duration: 600, remaining: 600, running: false, lastUpdated: null },
+  players: [],
+  matchStatus: 'ready',
+  showSummary: false
+};
+let localClockInterval = null;
+let timeUpTransitionTimer = null;
+let timeUpCountdownInterval = null;
+
+// Socket sync
+socket.on('battlebotsState', (state) => {
+  gameState = state;
+  renderDisplay();
+});
+
+// Match End / Time Up Event
+socket.on('battlebots_timeUp', () => {
+  triggerTimeUpSequence();
+});
+socket.on('battlebots_timerEnd', () => {
+  triggerTimeUpSequence();
+});
+socket.on('battlebots_matchEnded', () => {
+  triggerTimeUpSequence();
+});
+
+// Explicit Summary commands
+socket.on('battlebots_showSummary', () => {
+  hideTimeUpPopup();
+  showSummaryScreen();
+});
+socket.on('battlebots_hideSummary', () => {
+  resetAllOverlays();
+});
+socket.on('battlebots_clearDisplay', () => {
+  resetAllOverlays();
+});
+
+function triggerTimeUpSequence() {
+  const summary = document.getElementById('summaryOverlay');
+  if (summary.classList.contains('active')) return;
+
+  // 1. Instantly display massive TIME UP overlay
+  const timeUp = document.getElementById('timeUpOverlay');
+  timeUp.classList.add('active');
+
+  const progress = document.getElementById('timeUpProgressBar');
+  progress.style.transition = 'none';
+  progress.style.width = '100%';
+  setTimeout(() => {
+    progress.style.transition = 'width 5s linear';
+    progress.style.width = '0%';
+  }, 50);
+
+  let secondsLeft = 5;
+  const hint = document.getElementById('timeUpHint');
+  hint.textContent = `Transitioning to Match Summary in ${secondsLeft}s...`;
+
+  clearInterval(timeUpCountdownInterval);
+  timeUpCountdownInterval = setInterval(() => {
+    secondsLeft -= 1;
+    if (secondsLeft > 0) {
+      hint.textContent = `Transitioning to Match Summary in ${secondsLeft}s...`;
+    } else {
+      clearInterval(timeUpCountdownInterval);
+    }
+  }, 1000);
+
+  // 2. Wait exactly 5 seconds, then hide TIME UP and transition to Match Overview
+  clearTimeout(timeUpTransitionTimer);
+  timeUpTransitionTimer = setTimeout(() => {
+    hideTimeUpPopup();
+    showSummaryScreen();
+  }, 5000);
+}
+
+function hideTimeUpPopup() {
+  clearTimeout(timeUpTransitionTimer);
+  clearInterval(timeUpCountdownInterval);
+  document.getElementById('timeUpOverlay').classList.remove('active');
+}
+
+function resetAllOverlays() {
+  clearTimeout(timeUpTransitionTimer);
+  clearInterval(timeUpCountdownInterval);
+  document.getElementById('timeUpOverlay').classList.remove('active');
+  document.getElementById('summaryOverlay').classList.remove('active');
+}
+
+// Initial API fetch
+async function initFetch() {
+  try {
+    const res = await fetch('/api/battlebots/state');
+    if (res.ok) {
+      gameState = await res.json();
+      renderDisplay();
+      if (gameState.showSummary) {
+        showSummaryScreen();
+      }
+    }
+  } catch (err) {
+    console.error('Fetch state error:', err);
+  }
+}
+
+// Local clock loop for 100ms smooth decrement
+function startClock() {
+  clearInterval(localClockInterval);
+  localClockInterval = setInterval(() => {
+    if (gameState.timer.running && gameState.timer.lastUpdated) {
+      const elapsed = (Date.now() - gameState.timer.lastUpdated) / 1000;
+      const rem = Math.max(0, gameState.timer.remaining - elapsed);
+      updateClockText(rem);
+
+      if (rem <= 0 && gameState.matchStatus !== 'ended') {
+        gameState.matchStatus = 'ended';
+        gameState.timer.running = false;
+        renderDisplay();
+        triggerTimeUpSequence();
+      }
+    }
+  }, 100);
+}
+
+function updateClockText(rem) {
+  const s = Math.ceil(rem);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  const clockEl = document.getElementById('tvCountdown');
+  clockEl.textContent = `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+
+  if (s <= 10 && s > 0) {
+    clockEl.className = 'tv-countdown-clock ending';
+  } else if (gameState.timer.running) {
+    clockEl.className = 'tv-countdown-clock running';
+  } else {
+    clockEl.className = 'tv-countdown-clock';
+  }
+}
+
+function renderDisplay() {
+  // Event title
+  if (gameState.eventTitle) {
+    document.getElementById('eventTitleDisplay').textContent = gameState.eventTitle.toUpperCase();
+  }
+
+  // Status pill
+  const pill = document.getElementById('tvStatusPill');
+  const status = gameState.matchStatus || 'ready';
+  pill.textContent = status.toUpperCase();
+  pill.className = `status-pill ${status}`;
+
+  document.getElementById('footerMatchStatus').textContent = `Match Status: ${status.toUpperCase()}`;
+
+  // Timer
+  if (gameState.timer.running && gameState.timer.lastUpdated) {
+    const elapsed = (Date.now() - gameState.timer.lastUpdated) / 1000;
+    updateClockText(Math.max(0, gameState.timer.remaining - elapsed));
+  } else {
+    updateClockText(gameState.timer.remaining || 0);
+  }
+
+  // Determine current lowest score for crown (least falls)
+  const validScores = (gameState.players || []).map(p => p.score !== undefined ? p.score : 0);
+  const minScore = validScores.length > 0 ? Math.min(...validScores) : 0;
+  const allEqual = validScores.length > 0 && validScores.every(s => s === validScores[0]);
+
+  // Bots
+  const suffixes = ['A', 'B', 'C'];
+  suffixes.forEach((suffix, idx) => {
+    const bot = gameState.players[idx];
+    if (bot) {
+      document.getElementById(`tvName${suffix}`).textContent = (bot.name || `Bot ${suffix}`).toUpperCase();
+      const currentScore = bot.score !== undefined ? bot.score : 0;
+      document.getElementById(`tvScore${suffix}`).textContent = currentScore;
+
+      // Avatar
+      const avatarEl = document.getElementById(`tvAvatar${suffix}`);
+      if (bot.avatar && (bot.avatar.startsWith('http') || bot.avatar.startsWith('/'))) {
+        avatarEl.innerHTML = `<img src="${bot.avatar}" alt="${bot.name}">`;
+      } else {
+        avatarEl.textContent = bot.avatar || '🤖';
+      }
+
+      // Meta
+      const metaEl = document.getElementById(`tvMeta${suffix}`);
+      metaEl.innerHTML = `
+        ${bot.grade ? `<span class="badge">${bot.grade}</span>` : ''}
+        ${bot.group ? `<span class="badge">${bot.group}</span>` : ''}
+        ${bot.city ? `<span class="badge">${bot.city}</span>` : ''}
+      `;
+
+      // Leader Crown (Lowest falls wins! Show only if non-zero or live, not when all tied at 0)
+      const crownEl = document.getElementById(`crown${suffix}`);
+      if (!allEqual && currentScore === minScore) {
+        crownEl.classList.add('show');
+      } else {
+        crownEl.classList.remove('show');
+      }
+    }
+  });
+}
+
+// ── Match Overview / Summary Screen Logic ───────────────────────
+function showSummaryScreen() {
+  const overlay = document.getElementById('summaryOverlay');
+  overlay.classList.add('active');
+
+  const bots = gameState.players || [];
+  if (bots.length === 0) return;
+
+  // Calculate lowest points (reverse scoring)
+  const scores = bots.map(p => p.score !== undefined ? p.score : 0);
+  const minScore = Math.min(...scores);
+  const winners = bots.filter(p => (p.score !== undefined ? p.score : 0) === minScore);
+
+  const titleEl = document.getElementById('summaryWinnerTitle');
+  const subEl = document.getElementById('summaryWinnerSubtitle');
+
+  if (winners.length === 1) {
+    titleEl.textContent = `🏆 ${winners[0].name.toUpperCase()} WINS!`;
+    subEl.textContent = `Sumo Champion with only ${minScore} fall${minScore === 1 ? '' : 's'}!`;
+  } else if (winners.length === 2) {
+    titleEl.textContent = `🏆 CO-CHAMPIONS TIED!`;
+    subEl.textContent = `${winners[0].name} & ${winners[1].name} tied for 1st with ${minScore} falls!`;
+  } else {
+    titleEl.textContent = `🏆 THREE-WAY TIE!`;
+    subEl.textContent = `All 3 bots tied with ${minScore} falls!`;
+  }
+
+  // 3-Column Split Screen layout for the 3 bots
+  const grid = document.getElementById('summaryColumnsGrid');
+  const slotLabels = ['BOT A (FLAME)', 'BOT B (ICE)', 'BOT C (ACID)'];
+
+  grid.innerHTML = bots.map((p, idx) => {
+    const isWinner = (p.score !== undefined ? p.score : 0) === minScore;
+    const badgeText = isWinner ? (winners.length > 1 ? '👑 CO-CHAMPION' : '👑 SUMO CHAMPION') : `PARTICIPANT`;
+    const avatarHtml = (p.avatar && (p.avatar.startsWith('http') || p.avatar.startsWith('/')))
+      ? `<img src="${p.avatar}" alt="${p.name}">`
+      : `<span>${p.avatar || '🤖'}</span>`;
+
+    return `
+      <div class="summary-col-card ${isWinner ? 'is-winner' : ''}">
+        <div class="summary-winner-badge">${badgeText}</div>
+        <div style="font-size:0.75rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase;">${slotLabels[idx] || ''}</div>
+
+        <div class="summary-avatar-wrap">
+          ${avatarHtml}
+        </div>
+
+        <div class="summary-player-name">${p.name}</div>
+        <div class="summary-player-meta">
+          ${p.grade ? `<span>${p.grade}</span>` : ''}
+          ${p.group ? `<span>• ${p.group}</span>` : ''}
+          ${p.city ? `<span>• ${p.city}</span>` : ''}
+        </div>
+
+        <div class="summary-score-box">
+          <div class="summary-score-num">${p.score !== undefined ? p.score : 0}</div>
+          <div class="summary-score-lbl">Total Falls (Points)</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+document.getElementById('dismissSummaryBtn').addEventListener('click', () => {
+  resetAllOverlays();
+});
+
+// ── Fullscreen Toggle Logic ─────────────────────────
+function toggleFullscreen() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
+function updateFullscreenBtn() {
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const btn = document.getElementById('fsToggleBtn');
+  if (btn) {
+    btn.textContent = isFs ? '✖ Exit Fullscreen' : '⛶ Fullscreen';
+  }
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
+
+// Init
+initFetch();
+startClock();
+</script>
+</body>
+</html>

@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battle Bots (Sumo) - 1v1v1 Matchmaker Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080c14;
+  --surface: #111827;
+  --surface-hover: #1c2538;
+  --surface-card: #161f30;
+  --border: #30363d;
+  --border-subtle: #1f2937;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.4);
+  --gold-bg: rgba(251, 191, 36, 0.1);
+  --botA: #f97316;
+  --botA-glow: rgba(249, 115, 22, 0.45);
+  --botA-bg: rgba(249, 115, 22, 0.12);
+  --botB: #06b6d4;
+  --botB-glow: rgba(6, 182, 212, 0.45);
+  --botB-bg: rgba(6, 182, 212, 0.12);
+  --botC: #84cc16;
+  --botC-glow: rgba(132, 204, 22, 0.45);
+  --botC-bg: rgba(132, 204, 22, 0.12);
+  --red: #ef4444;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+  padding-bottom: 60px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.navbar, .match-arena-grid, .panel {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Top Navigation Bar ────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-icon {
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.6));
+}
+.brand h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.brand .sub {
+  font-size: 0.75rem;
+  color: #fb923c;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nav-link {
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.nav-link:hover {
+  color: var(--text);
+  border-color: var(--muted);
+  background: var(--surface-hover);
+}
+.nav-link.active {
+  background: var(--botA-bg);
+  border-color: var(--botA);
+  color: #fb923c;
+  box-shadow: 0 0 12px var(--botA-glow);
+}
+.nav-link.switch-game {
+  border-color: #3b82f6;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.1);
+}
+.nav-link.switch-game:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+/* ── Split Layout Container ────────────────────────── */
+.match-arena-grid {
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  gap: 20px;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+@media (max-width: 1080px) {
+  .match-arena-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Panel Common ──────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+}
+.panel-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text);
+}
+.panel-title .icon {
+  font-size: 1.35rem;
+}
+.badge-count {
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--botA-bg);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  font-weight: 700;
+}
+
+/* ── Left Side: Bot Pool ───────────────────────────── */
+.search-bar-wrap {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(8, 12, 20, 0.4);
+}
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s;
+}
+.search-input:focus {
+  border-color: var(--botA);
+  box-shadow: 0 0 8px var(--botA-glow);
+}
+
+.pool-scroll-list {
+  padding: 14px 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pool-item {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+.pool-item:hover {
+  border-color: var(--botA);
+  transform: translateX(4px);
+  background: var(--surface-hover);
+}
+.pool-item.selected-in-match {
+  opacity: 0.55;
+  border-color: #475569;
+  background: rgba(30, 41, 59, 0.4);
+}
+.pool-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #0f172a;
+  border: 2px solid var(--botA);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.pool-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pool-info {
+  flex: 1;
+  min-width: 0;
+}
+.pool-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pool-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.btn-select-player {
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid var(--botA);
+  background: var(--botA-bg);
+  color: #fb923c;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-select-player:hover:not(:disabled) {
+  background: var(--botA);
+  color: #080c14;
+}
+.btn-select-player:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+/* ── Right Side: 1v1v1 Arena Setup ─────────────────── */
+.arena-panel {
+  padding: 24px;
+}
+.arena-badge-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.arena-tag {
+  display: inline-block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 2.5px;
+  color: var(--botA);
+  text-transform: uppercase;
+  padding: 4px 16px;
+  background: var(--botA-bg);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 0 14px var(--botA-glow);
+}
+.arena-rule-pill {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.arena-rule-pill span.rule {
+  color: #f87171;
+  font-weight: 700;
+}
+
+/* 3-Slot Arena Grid */
+.slots-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .slots-container { grid-template-columns: 1fr; }
+}
+
+.arena-slot {
+  border-radius: 14px;
+  border: 2px dashed var(--border);
+  background: rgba(8, 12, 20, 0.5);
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+  position: relative;
+  transition: all 0.25s;
+}
+
+/* Slot A - Flame / Orange */
+.arena-slot.slot-a.filled {
+  border: 2px solid var(--botA);
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.15), rgba(17, 24, 39, 0.85));
+  box-shadow: 0 0 20px var(--botA-glow);
+}
+.arena-slot.slot-a .slot-pill {
+  color: #fb923c;
+  border-color: var(--botA);
+  background: var(--botA-bg);
+}
+
+/* Slot B - Cyan / Ice */
+.arena-slot.slot-b.filled {
+  border: 2px solid var(--botB);
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.15), rgba(17, 24, 39, 0.85));
+  box-shadow: 0 0 20px var(--botB-glow);
+}
+.arena-slot.slot-b .slot-pill {
+  color: #22d3ee;
+  border-color: var(--botB);
+  background: var(--botB-bg);
+}
+
+/* Slot C - Lime / Acid */
+.arena-slot.slot-c.filled {
+  border: 2px solid var(--botC);
+  background: linear-gradient(180deg, rgba(132, 204, 22, 0.15), rgba(17, 24, 39, 0.85));
+  box-shadow: 0 0 20px var(--botC-glow);
+}
+.arena-slot.slot-c .slot-pill {
+  color: #a3e635;
+  border-color: var(--botC);
+  background: var(--botC-bg);
+}
+
+.slot-pill {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 3px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+/* Empty Placeholder Content */
+.slot-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.35;
+}
+.slot-empty-text {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.slot-empty-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Filled Slot Content */
+.slot-filled-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.slot-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.6);
+}
+.slot-a .slot-avatar { border: 3px solid var(--botA); }
+.slot-b .slot-avatar { border: 3px solid var(--botB); }
+.slot-c .slot-avatar { border: 3px solid var(--botC); }
+.slot-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.slot-player-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  text-align: center;
+  word-break: break-word;
+}
+.slot-details-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.slot-badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-weight: 600;
+}
+.btn-remove-slot {
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-remove-slot:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
+/* ── Arena Controls (Duration & Launch) ────────────── */
+.arena-controls-card {
+  background: rgba(8, 12, 20, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.duration-select-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.duration-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.duration-buttons-row {
+  display: flex;
+  gap: 8px;
+}
+.dur-btn {
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dur-btn:hover {
+  border-color: var(--botA);
+  color: var(--text);
+}
+.dur-btn.active {
+  border-color: var(--botA);
+  background: var(--botA-bg);
+  color: #fb923c;
+  box-shadow: 0 0 10px var(--botA-glow);
+}
+
+.btn-start-match {
+  padding: 16px 42px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 6px 24px rgba(249, 115, 22, 0.5);
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.btn-start-match:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.7);
+}
+.btn-start-match:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  background: #334155;
+  color: #94a3b8;
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="brand">
+    <span class="brand-icon">🤖</span>
+    <div>
+      <h1>Battle Bots</h1>
+      <div class="sub">1v1v1 Sumo Arena Matchmaker</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="/battlebots/dashboard" class="nav-link">📋 Dashboard</a>
+    <a href="/battlebots/match" class="nav-link active">⚔️ Matchmaker</a>
+    <a href="/battlebots/leaderboard" class="nav-link">🏆 Leaderboard</a>
+    <a href="/battlebots/control" class="nav-link">🎛️ Control Panel</a>
+    <a href="/battlebots/display" target="_blank" class="nav-link">📺 TV Display</a>
+    <a href="/balloon/dashboard" class="nav-link switch-game">🎈 Balloon Game</a>
+    <a href="/drone/dashboard" class="nav-link switch-game" style="border-color: #00e5ff; color: #00e5ff;">🛸 Drone Game</a>
+    <a href="/dashboard" class="nav-link switch-game">⚽ Soccer Game</a>
+  </div>
+</div>
+
+<div class="match-arena-grid">
+  <!-- Left Side: Bot Selection Pool -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="icon">🛡️</span>
+        <span>Combat Bot Pool</span>
+      </div>
+      <span class="badge-count" id="poolBadge">0 Available</span>
+    </div>
+
+    <div class="search-bar-wrap">
+      <input type="text" id="poolSearch" class="search-input" placeholder="Filter by bot, grade, club, city...">
+    </div>
+
+    <div class="pool-scroll-list" id="poolList">
+      <div style="text-align: center; padding: 30px; color: var(--muted);">Loading combat bots...</div>
+    </div>
+  </div>
+
+  <!-- Right Side: 1v1v1 Match Setup Arena -->
+  <div class="panel arena-panel">
+    <div class="arena-badge-header">
+      <span class="arena-tag">⚔️ 1 VS 1 VS 1 SUMO RING ARENA</span>
+      <div class="arena-rule-pill">
+        3 Bots in Ring • Reverse Scoring: <span class="rule">Least falls (lowest points) wins!</span>
+      </div>
+    </div>
+
+    <!-- 3 Match Slots -->
+    <div class="slots-container">
+      <!-- Slot 1: Bot A -->
+      <div class="arena-slot slot-a" id="slotA">
+        <div class="slot-pill">BOT A (FLAME)</div>
+        <div class="slot-empty-icon">🤖</div>
+        <div class="slot-empty-text">Empty Slot</div>
+        <div class="slot-empty-hint">Select a combatant from the pool</div>
+      </div>
+
+      <!-- Slot 2: Bot B -->
+      <div class="arena-slot slot-b" id="slotB">
+        <div class="slot-pill">BOT B (ICE)</div>
+        <div class="slot-empty-icon">🤖</div>
+        <div class="slot-empty-text">Empty Slot</div>
+        <div class="slot-empty-hint">Select a combatant from the pool</div>
+      </div>
+
+      <!-- Slot 3: Bot C -->
+      <div class="arena-slot slot-c" id="slotC">
+        <div class="slot-pill">BOT C (ACID)</div>
+        <div class="slot-empty-icon">🤖</div>
+        <div class="slot-empty-text">Empty Slot</div>
+        <div class="slot-empty-hint">Select a combatant from the pool</div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls: Duration & Launch -->
+    <div class="arena-controls-card">
+      <div class="duration-select-box">
+        <span class="duration-label">⏱️ Duration:</span>
+        <div class="duration-buttons-row">
+          <button type="button" class="dur-btn" data-sec="300">5 Min</button>
+          <button type="button" class="dur-btn" data-sec="480">8 Min</button>
+          <button type="button" class="dur-btn active" data-sec="600">10 Min</button>
+          <button type="button" class="dur-btn" data-sec="720">12 Min</button>
+        </div>
+      </div>
+
+      <button type="button" id="startMatchBtn" class="btn-start-match" disabled>
+        <span>⚔️</span>
+        <span>START 1v1v1 MATCH</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allBots = [];
+let selectedSlots = [null, null, null]; // [slotA, slotB, slotC]
+let matchDuration = 600; // 10 minutes default
+
+// Duration buttons
+document.querySelectorAll('.dur-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    matchDuration = parseInt(btn.getAttribute('data-sec'), 10) || 600;
+  });
+});
+
+// Load bots
+async function loadRoster() {
+  try {
+    const res = await fetch('/api/battlebots/players');
+    if (!res.ok) throw new Error('Failed to load roster');
+    allBots = await res.json();
+    renderPoolList();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('poolList').innerHTML = `
+      <div style="text-align: center; padding: 30px; color: #ef4444;">
+        ⚠️ Failed to load combatants. Please refresh.
+      </div>
+    `;
+  }
+}
+
+function renderPoolList() {
+  const container = document.getElementById('poolList');
+  const badge = document.getElementById('poolBadge');
+  const query = (document.getElementById('poolSearch').value || '').trim().toLowerCase();
+
+  const filtered = allBots.filter(b => {
+    return (
+      (b.name && b.name.toLowerCase().includes(query)) ||
+      (b.grade && b.grade.toLowerCase().includes(query)) ||
+      (b.group && b.group.toLowerCase().includes(query)) ||
+      (b.city && b.city.toLowerCase().includes(query))
+    );
+  });
+
+  badge.textContent = `${filtered.length} Available`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 10px; color: var(--muted);">
+        ${query ? 'No bots match your filter.' : 'No bots registered yet. <a href="/battlebots/dashboard" style="color:var(--botA)">Register Bots</a>'}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(b => {
+    const isSelected = selectedSlots.some(s => s && s.id === b.id);
+    const avatarHtml = (b.avatar && (b.avatar.startsWith('http') || b.avatar.startsWith('/')))
+      ? `<img src="${b.avatar}" alt="${b.name}">`
+      : `<span>${b.avatar || '🤖'}</span>`;
+
+    return `
+      <div class="pool-item ${isSelected ? 'selected-in-match' : ''}">
+        <div class="pool-avatar">
+          ${avatarHtml}
+        </div>
+        <div class="pool-info">
+          <div class="pool-name">${b.name}</div>
+          <div class="pool-sub">
+            ${b.grade ? `<span>${b.grade}</span>` : ''}
+            ${b.group ? `<span>• ${b.group}</span>` : ''}
+            ${b.city ? `<span>• ${b.city}</span>` : ''}
+          </div>
+        </div>
+        <button type="button" class="btn-select-player"
+          ${isSelected ? 'disabled' : ''}
+          onclick="handlePickBot('${b.id}')">
+          ${isSelected ? '✓ Picked' : '+ Add'}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function handlePickBot(id) {
+  const bot = allBots.find(b => b.id === id);
+  if (!bot) return;
+  assignNextSlot(bot);
+}
+
+function assignNextSlot(bot) {
+  if (selectedSlots.some(s => s && s.id === bot.id)) return;
+
+  const emptyIndex = selectedSlots.findIndex(s => s === null);
+  if (emptyIndex === -1) {
+    alert('All 3 slots are filled! Remove a bot to add someone else.');
+    return;
+  }
+
+  selectedSlots[emptyIndex] = bot;
+  renderSlots();
+  renderPoolList();
+}
+
+function removeSlot(index) {
+  selectedSlots[index] = null;
+  renderSlots();
+  renderPoolList();
+}
+
+function renderSlots() {
+  const slotIds = ['slotA', 'slotB', 'slotC'];
+  const labels = ['BOT A (FLAME)', 'BOT B (ICE)', 'BOT C (ACID)'];
+
+  slotIds.forEach((id, idx) => {
+    const el = document.getElementById(id);
+    const bot = selectedSlots[idx];
+
+    if (!bot) {
+      el.classList.remove('filled');
+      el.innerHTML = `
+        <div class="slot-pill">${labels[idx]}</div>
+        <div class="slot-empty-icon">🤖</div>
+        <div class="slot-empty-text">Empty Slot</div>
+        <div class="slot-empty-hint">Select a combatant from the pool</div>
+      `;
+    } else {
+      el.classList.add('filled');
+      const avatarHtml = (bot.avatar && (bot.avatar.startsWith('http') || bot.avatar.startsWith('/')))
+        ? `<img src="${bot.avatar}" alt="${bot.name}">`
+        : `<span>${bot.avatar || '🤖'}</span>`;
+
+      el.innerHTML = `
+        <div class="slot-pill">${labels[idx]}</div>
+        <div class="slot-filled-content">
+          <div class="slot-avatar">
+            ${avatarHtml}
+          </div>
+          <div class="slot-player-name">${bot.name}</div>
+          <div class="slot-details-badges">
+            ${bot.grade ? `<span class="slot-badge">${bot.grade}</span>` : ''}
+            ${bot.group ? `<span class="slot-badge">${bot.group}</span>` : ''}
+            ${bot.city ? `<span class="slot-badge">${bot.city}</span>` : ''}
+          </div>
+          <button type="button" class="btn-remove-slot" onclick="removeSlot(${idx})">
+            ✕ Remove
+          </button>
+        </div>
+      `;
+    }
+  });
+
+  const allFilled = selectedSlots.every(s => s !== null);
+  const startBtn = document.getElementById('startMatchBtn');
+  startBtn.disabled = !allFilled;
+}
+
+// Search pool filter
+document.getElementById('poolSearch').addEventListener('input', renderPoolList);
+
+// START MATCH action
+document.getElementById('startMatchBtn').addEventListener('click', async () => {
+  if (!selectedSlots.every(s => s !== null)) return;
+
+  const btn = document.getElementById('startMatchBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Initializing Arena...';
+
+  const playerIds = selectedSlots.map(s => s.id);
+  const payload = {
+    playerIds,
+    players: selectedSlots,
+    duration: matchDuration
+  };
+
+  try {
+    const res = await fetch('/api/battlebots/match/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      // 1. Automatically open the TV display screen in a new tab
+      window.open('/battlebots/display', '_blank');
+
+      // 2. Redirect current window to the Control Panel
+      window.location.href = '/battlebots/control';
+    } else {
+      const err = await res.json();
+      alert('Error launching match: ' + (err.error || 'Server error'));
+      btn.disabled = false;
+      btn.textContent = '⚔️ START 1v1v1 MATCH';
+    }
+  } catch (err) {
+    alert('Network error starting match.');
+    btn.disabled = false;
+    btn.textContent = '⚔️ START 1v1v1 MATCH';
+  }
+});
+
+// Init
+loadRoster();
+</script>
+</body>
+</html>

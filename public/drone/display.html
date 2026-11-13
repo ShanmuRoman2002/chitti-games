@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drone Racing Championship - Live Arena Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #060911;
+  --surface: #0e1422;
+  --surface-card: #141c2e;
+  --border: #243048;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.5);
+  --pilotA: #00e5ff;
+  --pilotA-glow: rgba(0, 229, 255, 0.55);
+  --pilotA-bg: rgba(0, 229, 255, 0.08);
+  --pilotB: #c084fc;
+  --pilotB-glow: rgba(192, 132, 252, 0.55);
+  --pilotB-bg: rgba(192, 132, 252, 0.08);
+  --green: #22c55e;
+  --red: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.6);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+  user-select: none;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Top-Right Fixed Fullscreen Toggle ─────────────── */
+.top-fullscreen-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: rgba(14, 20, 34, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: #00e5ff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 229, 255, 0.2);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.top-fullscreen-btn:hover {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 229, 255, 0.5);
+}
+
+/* ── Main Fullscreen TV Grid ───────────────────────── */
+.tv-layout {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  padding: clamp(14px, 2vh, 28px);
+  gap: clamp(10px, 1.8vh, 24px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Top Header Bar ────────────────────────────────── */
+.top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(8px, 1.2vh, 16px) clamp(16px, 2.5vw, 36px);
+  background: rgba(14, 20, 34, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.event-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.event-logo-icon {
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.7));
+}
+.event-title-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.4rem, 2.8vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  line-height: 1.1;
+}
+.event-subtitle-text {
+  font-size: clamp(0.75rem, 1.1vw, 1rem);
+  color: var(--pilotA);
+  letter-spacing: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Timer Center Badge in Top Header */
+.center-timer-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.status-pill {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(0.75rem, 1vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  transition: all 0.3s;
+}
+.status-pill.ready { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+.status-pill.live { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.5); box-shadow: 0 0 12px rgba(34, 197, 94, 0.3); animation: pulseLive 1.5s infinite; }
+.status-pill.paused { background: rgba(251, 191, 36, 0.2); color: #fde047; border: 1px solid rgba(251, 191, 36, 0.5); }
+.status-pill.ended { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); }
+
+@keyframes pulseLive {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.04); }
+}
+
+.giant-timer-text {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2.2rem, 5vw, 4.4rem);
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(0, 229, 255, 0.6);
+}
+.giant-timer-text.danger {
+  color: #f87171;
+  text-shadow: 0 0 35px var(--red-glow);
+  animation: flashDanger 0.8s infinite;
+}
+@keyframes flashDanger {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.match-mode-tag {
+  font-size: clamp(0.8rem, 1.2vw, 1.1rem);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gold);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.08);
+  margin-right: 140px; /* offset from fixed fullscreen button */
+}
+
+/* ── 2-Column Split Arena Grid (1 vs 1) ────────────── */
+.arena-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(14px, 2.5vw, 36px);
+  height: 100%;
+  min-height: 0;
+}
+
+.pilot-column {
+  background: rgba(14, 20, 34, 0.75);
+  border-radius: 24px;
+  border: 2px solid var(--border);
+  padding: clamp(16px, 2.5vh, 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+}
+
+/* Pilot A: Cyan theme */
+.pilot-column.col-a {
+  border-color: rgba(0, 229, 255, 0.4);
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.12) 0%, rgba(14, 20, 34, 0.85) 60%);
+}
+.pilot-column.col-a:hover {
+  border-color: var(--pilotA);
+  box-shadow: 0 12px 40px var(--pilotA-glow);
+}
+
+/* Pilot B: Purple theme */
+.pilot-column.col-b {
+  border-color: rgba(192, 132, 252, 0.4);
+  background: linear-gradient(180deg, rgba(192, 132, 252, 0.12) 0%, rgba(14, 20, 34, 0.85) 60%);
+}
+.pilot-column.col-b:hover {
+  border-color: var(--pilotB);
+  box-shadow: 0 12px 40px var(--pilotB-glow);
+}
+
+/* Leader Highlight Crown Banner */
+.leader-crown-tag {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #0b0f19;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.75rem, 1.1vw, 1rem);
+  letter-spacing: 1.5px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+  animation: bounceCrown 2s infinite ease-in-out;
+  z-index: 10;
+}
+.leader-crown-tag.show {
+  display: flex;
+}
+@keyframes bounceCrown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.col-slot-badge {
+  font-size: clamp(0.85rem, 1.2vw, 1.15rem);
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 4px 18px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+}
+.col-a .col-slot-badge { background: rgba(0, 229, 255, 0.2); color: var(--pilotA); border: 1px solid rgba(0, 229, 255, 0.4); }
+.col-b .col-slot-badge { background: rgba(192, 132, 252, 0.2); color: var(--pilotB); border: 1px solid rgba(192, 132, 252, 0.4); }
+
+/* Avatar Display */
+.avatar-ring {
+  width: clamp(90px, 14vw, 170px);
+  height: clamp(90px, 14vw, 170px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(3.2rem, 6.5vw, 6.5rem);
+  margin: 4px 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  border: 4px solid transparent;
+  transition: transform 0.3s;
+}
+.avatar-ring:hover {
+  transform: scale(1.05);
+}
+.avatar-ring img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.col-a .avatar-ring { border-color: var(--pilotA); box-shadow: 0 0 35px var(--pilotA-glow); background: rgba(0, 229, 255, 0.1); }
+.col-b .avatar-ring { border-color: var(--pilotB); box-shadow: 0 0 35px var(--pilotB-glow); background: rgba(192, 132, 252, 0.1); }
+
+/* Pilot Name & Meta */
+.pilot-name-tv {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.6rem, 3.2vw, 3rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 6px;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+}
+.pilot-meta-tv {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: clamp(0.8rem, 1.1vw, 1.05rem);
+  color: var(--muted);
+  font-weight: 600;
+}
+.pilot-meta-tv span.badge {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Score Box */
+.tv-score-box {
+  background: rgba(10, 15, 26, 0.9);
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: clamp(12px, 2vh, 24px) clamp(20px, 4vw, 48px);
+  width: 85%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  box-shadow: inset 0 2px 15px rgba(0,0,0,0.6);
+  transition: all 0.3s;
+}
+.col-a .tv-score-box { border-color: rgba(0, 229, 255, 0.5); }
+.col-b .tv-score-box { border-color: rgba(192, 132, 252, 0.5); }
+
+.score-header-label {
+  font-size: clamp(0.85rem, 1.2vw, 1.15rem);
+  letter-spacing: 3px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.score-number-display {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(3.8rem, 8vw, 7.5rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.col-a .score-number-display { color: var(--pilotA); text-shadow: 0 0 35px var(--pilotA-glow); }
+.col-b .score-number-display { color: var(--pilotB); text-shadow: 0 0 35px var(--pilotB-glow); }
+
+.score-reverse-hint {
+  font-size: clamp(0.7rem, 0.95vw, 0.85rem);
+  color: var(--green);
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── Bottom Bar ────────────────────────────────────── */
+.bottom-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  background: rgba(14, 20, 34, 0.7);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: clamp(0.75rem, 1vw, 0.95rem);
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.footer-badge {
+  color: var(--gold);
+  font-weight: 800;
+}
+
+/* ========================================================= */
+/* STAGE 1: MASSIVE "TIME UP" POPUP (Triggered Instantly)     */
+/* ========================================================= */
+.timeup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 17, 0.88);
+  backdrop-filter: blur(16px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.timeup-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.timeup-card {
+  background: linear-gradient(135deg, rgba(20, 28, 46, 0.95), rgba(10, 14, 24, 0.98));
+  border: 3px solid #ef4444;
+  box-shadow: 0 0 80px rgba(239, 68, 68, 0.65), 0 20px 60px rgba(0, 0, 0, 0.9);
+  border-radius: 32px;
+  padding: clamp(30px, 5vw, 60px) clamp(40px, 6vw, 80px);
+  text-align: center;
+  max-width: 750px;
+  width: 90%;
+  animation: zoomInBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes zoomInBounce {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.timeup-icon-siren {
+  font-size: clamp(3.5rem, 6vw, 5.5rem);
+  animation: shakeSiren 1s infinite;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+@keyframes shakeSiren {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-12deg) scale(1.1); }
+  75% { transform: rotate(12deg) scale(1.1); }
+}
+.timeup-title-text {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(3.2rem, 7vw, 6.5rem);
+  font-weight: 900;
+  color: #ef4444;
+  letter-spacing: 6px;
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(239, 68, 68, 0.8);
+  margin-bottom: 12px;
+}
+.timeup-subtitle-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+.timeup-progress-wrapper {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  height: 10px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 14px;
+}
+.timeup-progress-fill {
+  background: linear-gradient(90deg, #ef4444, #fbbf24);
+  height: 100%;
+  width: 100%;
+  transition: width 5s linear;
+}
+.timeup-countdown-hint {
+  font-size: 1rem;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+/* ========================================================= */
+/* STAGE 2: 2-COLUMN SPLIT MATCH OVERVIEW & WINNER SUMMARY   */
+/* ========================================================= */
+.summary-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 17, 0.94);
+  backdrop-filter: blur(20px);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  padding: 20px;
+}
+.summary-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.summary-card-inner {
+  background: linear-gradient(180deg, rgba(20, 28, 46, 0.98), rgba(11, 15, 25, 0.99));
+  border: 2px solid rgba(251, 191, 36, 0.6);
+  border-radius: 32px;
+  padding: clamp(24px, 3.5vh, 44px) clamp(24px, 3.5vw, 48px);
+  width: 95%;
+  max-width: 1200px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 0 80px rgba(251, 191, 36, 0.35), 0 25px 70px rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  animation: slideUpModal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes slideUpModal {
+  0% { transform: translateY(50px) scale(0.95); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.summary-header-wrap {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.summary-trophy-banner {
+  font-size: clamp(3rem, 5vw, 4.5rem);
+  filter: drop-shadow(0 0 24px rgba(251, 191, 36, 0.8));
+  display: inline-block;
+  animation: bounceTrophy 1.8s infinite;
+}
+@keyframes bounceTrophy {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.summary-winner-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.8rem, 3.8vw, 3.4rem);
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-shadow: 0 0 30px var(--gold-glow);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.summary-winner-sub {
+  font-size: clamp(1rem, 1.4vw, 1.35rem);
+  color: #e2e8f0;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* 2-Column Split Grid for the 2 Pilots */
+.summary-2col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 2.5vw, 32px);
+  width: 100%;
+  margin-bottom: 28px;
+}
+
+.summary-pilot-card {
+  background: rgba(14, 20, 34, 0.85);
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  padding: clamp(18px, 2.5vh, 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+.summary-pilot-card.champion {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.18) 0%, rgba(14, 20, 34, 0.95) 75%);
+  box-shadow: 0 0 40px rgba(251, 191, 36, 0.4);
+  transform: translateY(-4px);
+}
+.summary-pilot-card.runner-up {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(14, 20, 34, 0.6);
+  opacity: 0.85;
+}
+
+.summary-rank-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.85rem, 1.1vw, 1.1rem);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 16px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+}
+.summary-pilot-card.champion .summary-rank-badge {
+  background: var(--gold);
+  color: #0b0f19;
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.6);
+}
+.summary-pilot-card.runner-up .summary-rank-badge {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.summary-pilot-avatar {
+  width: clamp(70px, 9vw, 110px);
+  height: clamp(70px, 9vw, 110px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(2.5rem, 4vw, 4rem);
+  margin-bottom: 10px;
+  border: 3px solid transparent;
+  overflow: hidden;
+}
+.summary-pilot-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.summary-pilot-card.champion .summary-pilot-avatar {
+  border-color: var(--gold);
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.6);
+}
+.summary-pilot-card.runner-up .summary-pilot-avatar {
+  border-color: #64748b;
+}
+
+.summary-pilot-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(1.4rem, 2.2vw, 2.2rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.summary-pilot-meta {
+  font-size: clamp(0.75rem, 0.95vw, 0.95rem);
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.summary-points-pill {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 10px 24px;
+  width: 100%;
+  max-width: 260px;
+}
+.summary-points-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.summary-points-value {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  margin-top: 4px;
+}
+.summary-pilot-card.champion .summary-points-value {
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+}
+
+.btn-dismiss-summary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 10px 28px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.btn-dismiss-summary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+  transform: translateY(-2px);
+}
+</style>
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<!-- Fixed Top-Right Fullscreen Toggle -->
+<button class="top-fullscreen-btn" id="fsToggleBtn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+  ⛶ Fullscreen
+</button>
+
+<div class="tv-layout">
+  <!-- Top Header Bar -->
+  <header class="top-header">
+    <div class="event-title-wrap">
+      <span class="event-logo-icon">🛸</span>
+      <div>
+        <div class="event-title-text" id="eventTitleDisplay">DRONE RACING ARENA</div>
+        <div class="event-subtitle-text">1v1 SKY BATTLE CHAMPIONSHIP</div>
+      </div>
+    </div>
+
+    <!-- Center Giant Countdown Clock -->
+    <div class="center-timer-wrap">
+      <div class="status-pill ready" id="statusPill">READY</div>
+      <div class="giant-timer-text" id="giantTimer">05:00</div>
+    </div>
+
+    <div class="match-mode-tag">
+      STANDARD SCORING (+1 POINT)
+    </div>
+  </header>
+
+  <!-- Main 1v1 Arena Columns (Pilot A vs Pilot B) -->
+  <main class="arena-grid">
+    <!-- Column A: Pilot A (Cyan) -->
+    <div class="pilot-column col-a" id="colA">
+      <div class="col-slot-badge">PILOT A</div>
+      <div class="leader-crown-tag" id="crownA">👑 CURRENT LEADER</div>
+
+      <div class="avatar-ring" id="tvAvatarA">🛸</div>
+
+      <div>
+        <div class="pilot-name-tv" id="tvNameA">PILOT A</div>
+        <div class="pilot-meta-tv" id="tvMetaA">
+          <span class="badge">Team Cyan</span>
+        </div>
+      </div>
+
+      <div class="tv-score-box">
+        <div class="score-header-label">TARGET POINTS</div>
+        <div class="score-number-display" id="tvScoreA">0</div>
+        <div class="score-reverse-hint">+1 Point / Gate</div>
+      </div>
+    </div>
+
+    <!-- Column B: Pilot B (Purple) -->
+    <div class="pilot-column col-b" id="colB">
+      <div class="col-slot-badge">PILOT B</div>
+      <div class="leader-crown-tag" id="crownB">👑 CURRENT LEADER</div>
+
+      <div class="avatar-ring" id="tvAvatarB">🛸</div>
+
+      <div>
+        <div class="pilot-name-tv" id="tvNameB">PILOT B</div>
+        <div class="pilot-meta-tv" id="tvMetaB">
+          <span class="badge">Team Violet</span>
+        </div>
+      </div>
+
+      <div class="tv-score-box">
+        <div class="score-header-label">TARGET POINTS</div>
+        <div class="score-number-display" id="tvScoreB">0</div>
+        <div class="score-reverse-hint">+1 Point / Gate</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Bar -->
+  <footer class="bottom-footer">
+    <div>
+      <span class="footer-badge">ROBOT SOCCER SCOREBOARD PLATFORM</span> • Drone Racing 1v1 Arena
+    </div>
+    <div id="footerMatchStatus">
+      Match Status: Standby
+    </div>
+  </footer>
+</div>
+
+<!-- ========================================================= -->
+<!-- STAGE 1: MASSIVE "TIME UP" POPUP (Triggered Instantly)     -->
+<!-- ========================================================= -->
+<div class="timeup-overlay" id="timeUpOverlay">
+  <div class="timeup-card">
+    <div class="timeup-icon-siren">⏰</div>
+    <div class="timeup-title-text">TIME UP!</div>
+    <div class="timeup-subtitle-text">MATCH CONCLUDED • CALCULATING WINNER</div>
+
+    <div class="timeup-progress-wrapper">
+      <div class="timeup-progress-fill" id="timeUpProgressBar"></div>
+    </div>
+    <div class="timeup-countdown-hint" id="timeUpHint">Transitioning to Match Summary in 5s...</div>
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- STAGE 2: 2-COLUMN SPLIT MATCH OVERVIEW & WINNER SUMMARY   -->
+<!-- ========================================================= -->
+<div class="summary-overlay" id="summaryOverlay">
+  <div class="summary-card-inner">
+    <div class="summary-header-wrap">
+      <div class="summary-trophy-banner">🏆</div>
+      <div class="summary-winner-title" id="summaryWinnerTitle">MATCH OVERVIEW</div>
+      <div class="summary-winner-sub" id="summaryWinnerSubtitle">1v1 Drone Battle Final Standings (Highest Points Wins)</div>
+    </div>
+
+    <!-- 2-Column Split Layout for Pilot A and Pilot B -->
+    <div class="summary-2col-grid" id="summaryColumnsGrid">
+      <!-- Injected by JavaScript -->
+    </div>
+
+    <button type="button" class="btn-dismiss-summary" id="dismissSummaryBtn">
+      ✕ Dismiss Summary
+    </button>
+  </div>
+</div>
+
+<script>
+const socket = io();
+let gameState = {
+  eventTitle: 'Drone Racing Championship',
+  timer: { duration: 300, remaining: 300, running: false, lastUpdated: null },
+  players: [],
+  matchStatus: 'ready',
+  showSummary: false
+};
+let localClockInterval = null;
+let timeUpTransitionTimer = null;
+let timeUpCountdownInterval = null;
+
+// Socket sync
+socket.on('droneState', (state) => {
+  gameState = state;
+  renderDisplay();
+});
+
+// Match End / Time Up Event
+socket.on('drone_timeUp', () => {
+  triggerTimeUpSequence();
+});
+socket.on('drone_timerEnd', () => {
+  triggerTimeUpSequence();
+});
+socket.on('drone_matchEnded', () => {
+  triggerTimeUpSequence();
+});
+
+// Explicit Summary commands
+socket.on('drone_showSummary', () => {
+  hideTimeUpPopup();
+  showSummaryScreen();
+});
+socket.on('drone_hideSummary', () => {
+  resetAllOverlays();
+});
+socket.on('drone_clearDisplay', () => {
+  resetAllOverlays();
+});
+
+function triggerTimeUpSequence() {
+  const summary = document.getElementById('summaryOverlay');
+  if (summary.classList.contains('active')) return;
+
+  // 1. Instantly display massive TIME UP overlay
+  const timeUp = document.getElementById('timeUpOverlay');
+  timeUp.classList.add('active');
+
+  const progress = document.getElementById('timeUpProgressBar');
+  progress.style.transition = 'none';
+  progress.style.width = '100%';
+  setTimeout(() => {
+    progress.style.transition = 'width 5s linear';
+    progress.style.width = '0%';
+  }, 50);
+
+  let secondsLeft = 5;
+  const hint = document.getElementById('timeUpHint');
+  hint.textContent = `Transitioning to Match Summary in ${secondsLeft}s...`;
+
+  clearInterval(timeUpCountdownInterval);
+  timeUpCountdownInterval = setInterval(() => {
+    secondsLeft -= 1;
+    if (secondsLeft > 0) {
+      hint.textContent = `Transitioning to Match Summary in ${secondsLeft}s...`;
+    } else {
+      clearInterval(timeUpCountdownInterval);
+    }
+  }, 1000);
+
+  // Play horn sound via Web Audio API
+  playSirenTone();
+
+  // 2. Wait exactly 5 seconds, then transition to Match Overview
+  clearTimeout(timeUpTransitionTimer);
+  timeUpTransitionTimer = setTimeout(() => {
+    hideTimeUpPopup();
+    showSummaryScreen();
+  }, 5000);
+}
+
+function hideTimeUpPopup() {
+  clearTimeout(timeUpTransitionTimer);
+  clearInterval(timeUpCountdownInterval);
+  document.getElementById('timeUpOverlay').classList.remove('active');
+}
+
+function resetAllOverlays() {
+  clearTimeout(timeUpTransitionTimer);
+  clearInterval(timeUpCountdownInterval);
+  document.getElementById('timeUpOverlay').classList.remove('active');
+  document.getElementById('summaryOverlay').classList.remove('active');
+}
+
+// Initial API fetch
+async function initFetch() {
+  try {
+    const res = await fetch('/api/drone/state');
+    if (res.ok) {
+      gameState = await res.json();
+      renderDisplay();
+      if (gameState.showSummary) {
+        showSummaryScreen();
+      }
+    }
+  } catch (err) {
+    console.error('Fetch drone state error:', err);
+  }
+}
+
+// Local clock loop for smooth 100ms decrement
+function startClock() {
+  clearInterval(localClockInterval);
+  localClockInterval = setInterval(() => {
+    if (gameState.timer && gameState.timer.running && gameState.timer.lastUpdated) {
+      const elapsed = (Date.now() - gameState.timer.lastUpdated) / 1000;
+      const rem = Math.max(0, gameState.timer.remaining - elapsed);
+      updateClockText(rem);
+
+      if (rem <= 0 && gameState.matchStatus !== 'ended') {
+        gameState.matchStatus = 'ended';
+        gameState.timer.running = false;
+        renderDisplay();
+        triggerTimeUpSequence();
+      }
+    }
+  }, 100);
+}
+
+function formatTime(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+}
+
+function updateClockText(rem) {
+  const clockEl = document.getElementById('giantTimer');
+  if (clockEl) {
+    clockEl.textContent = formatTime(rem);
+    if (rem <= 30 && rem > 0) {
+      clockEl.classList.add('danger');
+    } else {
+      clockEl.classList.remove('danger');
+    }
+  }
+}
+
+// Render main display
+function renderDisplay() {
+  // Title
+  if (gameState.eventTitle) {
+    document.getElementById('eventTitleDisplay').textContent = gameState.eventTitle;
+  }
+
+  // Timer & Status Pill
+  const pill = document.getElementById('statusPill');
+  const clockEl = document.getElementById('giantTimer');
+  const footerStatus = document.getElementById('footerMatchStatus');
+
+  pill.className = `status-pill ${gameState.matchStatus || 'ready'}`;
+  pill.textContent = (gameState.matchStatus || 'READY').toUpperCase();
+  footerStatus.textContent = `Match Status: ${(gameState.matchStatus || 'Ready').toUpperCase()}`;
+
+  let currentRem = gameState.timer.remaining;
+  if (gameState.timer.running && gameState.timer.lastUpdated) {
+    const elapsed = (Date.now() - gameState.timer.lastUpdated) / 1000;
+    currentRem = Math.max(0, gameState.timer.remaining - elapsed);
+  }
+  updateClockText(currentRem);
+
+  // Players (1v1: 2 players)
+  const players = gameState.players || [];
+  const pA = players[0] || { name: 'Pilot A', avatar: '🛸', score: 0 };
+  const pB = players[1] || { name: 'Pilot B', avatar: '🛸', score: 0 };
+
+  renderPilotCol('A', pA);
+  renderPilotCol('B', pB);
+
+  // Determine current Leader (Standard scoring: HIGHER score is leading!)
+  const scoreA = pA.score || 0;
+  const scoreB = pB.score || 0;
+
+  const crownA = document.getElementById('crownA');
+  const crownB = document.getElementById('crownB');
+
+  crownA.classList.remove('show');
+  crownB.classList.remove('show');
+
+  // If match live or paused or ended and scores differ
+  if (gameState.matchStatus !== 'ready' && (scoreA > 0 || scoreB > 0)) {
+    if (scoreA > scoreB) {
+      crownA.classList.add('show');
+    } else if (scoreB > scoreA) {
+      crownB.classList.add('show');
+    }
+  }
+
+  // Handle summary overlay state from server
+  if (gameState.showSummary) {
+    hideTimeUpPopup();
+    showSummaryScreen();
+  }
+}
+
+function renderPilotCol(slot, player) {
+  const nameEl = document.getElementById(`tvName${slot}`);
+  const avatarEl = document.getElementById(`tvAvatar${slot}`);
+  const scoreEl = document.getElementById(`tvScore${slot}`);
+  const metaEl = document.getElementById(`tvMeta${slot}`);
+
+  nameEl.textContent = player.name || `Pilot ${slot}`;
+
+  if (player.avatar && (player.avatar.startsWith('data:') || player.avatar.startsWith('http') || player.avatar.startsWith('/'))) {
+    avatarEl.innerHTML = `<img src="${player.avatar}" alt="${player.name}">`;
+  } else {
+    avatarEl.textContent = player.avatar || '🛸';
+  }
+
+  const prevScore = parseInt(scoreEl.textContent) || 0;
+  const newScore = player.score || 0;
+  scoreEl.textContent = newScore;
+  if (newScore !== prevScore) {
+    scoreEl.style.transform = 'scale(1.3)';
+    setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 250);
+  }
+
+  const metaParts = [];
+  if (player.grade) metaParts.push(`<span class="badge">Grade ${player.grade}</span>`);
+  if (player.group) metaParts.push(`<span class="badge">Group ${player.group}</span>`);
+  if (player.city) metaParts.push(`<span class="badge">${player.city}</span>`);
+  if (metaParts.length === 0) {
+    metaParts.push(`<span class="badge">Pilot ${slot}</span>`);
+  }
+  metaEl.innerHTML = metaParts.join(' ');
+}
+
+// ── Match Overview & Winner Calculation ──────────────────
+function showSummaryScreen() {
+  const overlay = document.getElementById('summaryOverlay');
+  overlay.classList.add('active');
+
+  const players = (gameState.players || []).slice(0, 2);
+  if (players.length < 2) return;
+
+  // Standard Scoring: HIGHEST score is 1st Rank!
+  const sorted = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  const isTie = sorted[0].score === sorted[1].score;
+  const winnerTitle = document.getElementById('summaryWinnerTitle');
+  const winnerSub = document.getElementById('summaryWinnerSubtitle');
+
+  if (isTie) {
+    winnerTitle.textContent = 'MATCH TIED!';
+    winnerSub.textContent = `Both Pilots finished with ${sorted[0].score || 0} Points`;
+  } else {
+    winnerTitle.textContent = `${sorted[0].name.toUpperCase()} WINS! 🏆`;
+    winnerSub.textContent = `Sky Champion with ${sorted[0].score || 0} Target Points`;
+  }
+
+  const grid = document.getElementById('summaryColumnsGrid');
+  grid.innerHTML = '';
+
+  sorted.forEach((p, idx) => {
+    const isChamp = !isTie && idx === 0;
+    const rankLabel = isTie ? 'TIED' : (idx === 0 ? '🏆 CHAMPION' : '🥈 RUNNER-UP');
+
+    let avatarHtml = `<div class="summary-pilot-avatar">🛸</div>`;
+    if (p.avatar && (p.avatar.startsWith('data:') || p.avatar.startsWith('http') || p.avatar.startsWith('/'))) {
+      avatarHtml = `<div class="summary-pilot-avatar"><img src="${p.avatar}" alt="${p.name}"></div>`;
+    } else if (p.avatar) {
+      avatarHtml = `<div class="summary-pilot-avatar">${p.avatar}</div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = `summary-pilot-card ${isChamp ? 'champion' : 'runner-up'}`;
+    card.innerHTML = `
+      <div class="summary-rank-badge">${rankLabel}</div>
+      ${avatarHtml}
+      <div class="summary-pilot-name">${p.name}</div>
+      <div class="summary-pilot-meta">${p.city ? p.city + ' • ' : ''}${p.group ? 'Group ' + p.group : 'Pilot ' + (idx + 1)}</div>
+      <div class="summary-points-pill">
+        <div class="summary-points-label">Total Points Scored</div>
+        <div class="summary-points-value">${p.score || 0}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// Web Audio sound tone
+function playSirenTone() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(350, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(700, ctx.currentTime + 0.35);
+    osc.frequency.exponentialRampToValueAtTime(350, ctx.currentTime + 0.7);
+
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 1.2);
+  } catch (e) {
+    // Audio autoplay might be restricted before interaction
+  }
+}
+
+// Dismiss summary button
+document.getElementById('dismissSummaryBtn').addEventListener('click', () => {
+  resetAllOverlays();
+  socket.emit('drone_dismissSummary');
+});
+
+// ── Fullscreen Toggle Logic ──────────────────────────────
+function toggleFullscreen() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch(err => console.warn(err));
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(err => console.warn(err));
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
+function updateFullscreenBtn() {
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const btn = document.getElementById('fsToggleBtn');
+  if (btn) {
+    btn.textContent = isFs ? '✖ Exit Fullscreen' : '⛶ Fullscreen';
+  }
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
+
+// Start
+initFetch();
+startClock();
+</script>
+</body>
+</html>
+

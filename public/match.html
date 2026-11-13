@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Soccer - Match-Making Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #080c14;
+  --surface: #111827;
+  --surface-card: #161f30;
+  --border: #30363d;
+  --border-subtle: #1f2937;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --blue: #3b82f6;
+  --blue-glow: rgba(59, 130, 246, 0.4);
+  --blue-bg: rgba(59, 130, 246, 0.1);
+  --red: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.4);
+  --red-bg: rgba(239, 68, 68, 0.1);
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.4);
+  --green: #22c55e;
+  --green-glow: rgba(34, 197, 94, 0.4);
+  --purple: #a855f7;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+  padding-bottom: 60px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── Global Background Watermark ─────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('/WhatsApp%20Image%202026-11-12%20at%204.03.54%20PM.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.navbar, .match-arena-grid, .panel {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Top Navbar ────────────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.brand h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.brand .sub {
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nav-link {
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.nav-link:hover {
+  color: var(--text);
+  border-color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+}
+.nav-link.active {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ── Split Layout Container ────────────────────────── */
+.match-arena-grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 20px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+@media (max-width: 1024px) {
+  .match-arena-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Panel Common ──────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.pool-count {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid var(--blue);
+  color: var(--blue);
+}
+
+/* ── Left Side: Team Pool ──────────────────────────── */
+.search-bar-wrap {
+  margin-bottom: 14px;
+  position: relative;
+}
+.search-bar-wrap input {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  font-size: 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-bar-wrap input:focus {
+  border-color: var(--blue);
+}
+.search-bar-wrap .icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.team-pool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.team-pool-list::-webkit-scrollbar {
+  width: 6px;
+}
+.team-pool-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+/* ── Team Pool Item ────────────────────────────────── */
+.pool-item {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+.pool-item:hover {
+  border-color: var(--muted);
+  background: rgba(22, 31, 48, 0.95);
+  transform: translateX(2px);
+}
+.pool-item.selected-a {
+  border-color: var(--blue);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+}
+.pool-item.selected-b {
+  border-color: var(--red);
+  background: rgba(239, 68, 68, 0.08);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+}
+
+.pool-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.pool-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.pool-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.pool-logo .preset-icon {
+  font-size: 1.4rem;
+}
+
+.pool-details {
+  min-width: 0;
+  flex: 1;
+}
+.pool-team-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.5px;
+}
+.pool-students {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ── Add / Select Button on item ───────────────────── */
+.btn-pool-action {
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-pool-action:hover {
+  background: var(--blue);
+  color: #000;
+  border-color: var(--blue);
+  box-shadow: 0 0 10px var(--blue-glow);
+}
+.btn-pool-action.is-selected-a {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.btn-pool-action.is-selected-b {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ── Right Side: Match Setup ───────────────────────── */
+.match-setup-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.arena-header-desc {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* ── VS Boxes Layout ───────────────────────────────── */
+.vs-arena-container {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+  position: relative;
+}
+@media (max-width: 768px) {
+  .vs-arena-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* ── Team Match Slot Box ───────────────────────────── */
+.match-slot {
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 24px 20px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Slot A - Blue Corner */
+.match-slot.slot-a {
+  border: 2px dashed rgba(59, 130, 246, 0.4);
+}
+.match-slot.slot-a.filled {
+  border: 2px solid var(--blue);
+  background: radial-gradient(circle at center top, rgba(59, 130, 246, 0.15) 0%, rgba(13, 17, 23, 0.95) 75%);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+}
+
+/* Slot B - Red Corner */
+.match-slot.slot-b {
+  border: 2px dashed rgba(239, 68, 68, 0.4);
+}
+.match-slot.slot-b.filled {
+  border: 2px solid var(--red);
+  background: radial-gradient(circle at center top, rgba(239, 68, 68, 0.15) 0%, rgba(13, 17, 23, 0.95) 75%);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+}
+
+/* Corner badges */
+.slot-corner-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.badge-corner-a {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--blue);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+.badge-corner-b {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--red);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* Remove button on slot */
+.btn-remove-slot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-remove-slot:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Empty Placeholder Content */
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  padding: 20px 10px;
+}
+.placeholder-content .robot-icon {
+  font-size: 3.5rem;
+  opacity: 0.4;
+  margin-bottom: 4px;
+}
+.placeholder-content .title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.placeholder-content .hint {
+  font-size: 0.82rem;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+/* Populated Slot Content */
+.populated-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.slot-team-logo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  margin-bottom: 6px;
+}
+.slot-a .slot-team-logo { border: 3px solid var(--blue); box-shadow: 0 0 20px var(--blue-glow); }
+.slot-b .slot-team-logo { border: 3px solid var(--red); box-shadow: 0 0 20px var(--red-glow); }
+
+.slot-team-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.slot-team-logo .preset-icon {
+  font-size: 3.2rem;
+}
+
+.slot-team-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slot-students-badge {
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 14px;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slot-student-names {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Center VS Element ─────────────────────────────── */
+.vs-divider-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+}
+.vs-emblem {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2a2007 0%, #111827 80%);
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Orbitron', monospace;
+  font-size: 1.5rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px var(--gold-glow);
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+  animation: pulse-vs 2.5s infinite;
+}
+@keyframes pulse-vs {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px var(--gold-glow); }
+  50% { transform: scale(1.05); box-shadow: 0 0 32px var(--gold-glow); }
+}
+.btn-swap-teams {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+.btn-swap-teams:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+/* ── Match Configuration Options ───────────────────── */
+.match-options-card {
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.match-option-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.match-option-item label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.duration-selector {
+  display: flex;
+  gap: 6px;
+}
+.btn-dur-chip {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-dur-chip:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+.btn-dur-chip.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* ── Large 'START MATCH' Button ────────────────────── */
+.start-match-wrapper {
+  margin-top: 10px;
+}
+.btn-start-match {
+  width: 100%;
+  padding: 20px 32px;
+  font-family: 'Orbitron', monospace;
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  box-shadow: 0 8px 30px rgba(34, 197, 94, 0.4);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn-start-match:not(:disabled):hover {
+  background: linear-gradient(135deg, #22c55e, #4ade80);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(74, 222, 128, 0.5);
+}
+.btn-start-match:disabled {
+  background: #1f2937;
+  color: #4b5563;
+  cursor: not-allowed;
+  box-shadow: none;
+  border: 1px solid #374151;
+}
+
+/* ── Match transition modal/overlay ────────────────── */
+.overlay-transition {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 20, 0.95);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.overlay-transition.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.launch-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.launch-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.launch-sub {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="brand">
+    <div class="brand-icon">⚔️</div>
+    <div>
+      <h1>Robot Soccer Scoreboard</h1>
+      <div class="sub">Match-Making Arena</div>
+    </div>
+  </div>
+  <nav class="nav-links">
+    <a href="/dashboard" class="nav-link">📋 Dashboard</a>
+    <a href="/match" class="nav-link active">⚔️ Matchmaker</a>
+    <a href="/leaderboard" class="nav-link">🏆 Leaderboard</a>
+    <a href="/control" class="nav-link">🎮 Control Panel</a>
+    <a href="/display" target="_blank" class="nav-link">📺 TV Display</a>
+    <a href="/balloon/match" class="nav-link" style="border-color: rgba(251, 191, 36, 0.4); color: #fde047; background: rgba(251, 191, 36, 0.1);">🎈 Balloon Game</a>
+    <a href="/battlebots/match" class="nav-link" style="border-color: rgba(249, 115, 22, 0.4); color: #fb923c; background: rgba(249, 115, 22, 0.1);">🤖 Battle Bots</a>
+    <a href="/drone/match" class="nav-link" style="border-color: rgba(0, 229, 255, 0.4); color: #00e5ff; background: rgba(0, 229, 255, 0.1);">🛸 Drone Game</a>
+    <a href="/logout" class="nav-link">🚪 Logout</a>
+  </nav>
+</div>
+
+<!-- Main Split Screen Layout -->
+<main class="match-arena-grid">
+  <!-- Left Side: Team Pool -->
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span>👥</span>
+        <h2>Team Pool</h2>
+        <span class="pool-count" id="poolCount">0 Teams</span>
+      </div>
+      <div>
+        <a href="/dashboard" class="nav-link" style="font-size:0.75rem; padding:4px 10px;">+ Register</a>
+      </div>
+    </div>
+
+    <!-- Search / Filter -->
+    <div class="search-bar-wrap">
+      <span class="icon">🔍</span>
+      <input type="text" id="poolSearchInput" placeholder="Filter teams or students..." oninput="filterTeamPool(this.value)">
+    </div>
+
+    <!-- Scrollable Pool List -->
+    <div class="team-pool-list" id="teamPoolList">
+      <div style="text-align:center; padding:30px; color:var(--muted);">
+        Loading registered teams...
+      </div>
+    </div>
+  </section>
+
+  <!-- Right Side: Match Setup Arena -->
+  <section class="panel match-setup-panel">
+    <div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">
+            <span>🏟️</span>
+            <h2>Match Setup & VS Arena</h2>
+          </div>
+          <p class="arena-header-desc">Select Team A and Team B from the pool to populate the match arena.</p>
+        </div>
+      </div>
+
+      <!-- VS Boxes -->
+      <div class="vs-arena-container">
+        <!-- Team A Slot (Blue) -->
+        <div class="match-slot slot-a" id="slotA">
+          <span class="slot-corner-badge badge-corner-a">🔵 Team A (Blue)</span>
+          <button class="btn-remove-slot" id="removeSlotABtn" style="display:none" onclick="removeSelectedTeam('a')">✕ Clear</button>
+
+          <!-- Empty placeholder -->
+          <div class="placeholder-content" id="placeholderA">
+            <div class="robot-icon">🤖</div>
+            <div class="title" style="color:var(--blue);">Select Team A</div>
+            <p class="hint">Click <strong>'Add/Select'</strong> on any team from the pool.</p>
+          </div>
+
+          <!-- Populated view -->
+          <div class="populated-content" id="populatedA" style="display:none">
+            <div class="slot-team-logo" id="slotLogoA"></div>
+            <div class="slot-team-name" id="slotNameA">Team Name</div>
+            <div class="slot-students-badge" id="slotStudentsA">
+              👥 <span class="slot-student-names">Student 1 & Student 2</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center VS Element -->
+        <div class="vs-divider-box">
+          <div class="vs-emblem">VS</div>
+          <button class="btn-swap-teams" onclick="swapSelectedTeams()" title="Swap Team A and Team B corners">
+            <span>⇄</span>
+            <span>Swap Corners</span>
+          </button>
+        </div>
+
+        <!-- Team B Slot (Red) -->
+        <div class="match-slot slot-b" id="slotB">
+          <span class="slot-corner-badge badge-corner-b">🔴 Team B (Red)</span>
+          <button class="btn-remove-slot" id="removeSlotBBtn" style="display:none" onclick="removeSelectedTeam('b')">✕ Clear</button>
+
+          <!-- Empty placeholder -->
+          <div class="placeholder-content" id="placeholderB">
+            <div class="robot-icon">🤖</div>
+            <div class="title" style="color:var(--red);">Select Team B</div>
+            <p class="hint">Click <strong>'Add/Select'</strong> on a second team from the pool.</p>
+          </div>
+
+          <!-- Populated view -->
+          <div class="populated-content" id="populatedB" style="display:none">
+            <div class="slot-team-logo" id="slotLogoB"></div>
+            <div class="slot-team-name" id="slotNameB">Team Name</div>
+            <div class="slot-students-badge" id="slotStudentsB">
+              👥 <span class="slot-student-names">Student 1 & Student 2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Match Options -->
+      <div class="match-options-card">
+        <div class="match-option-item">
+          <label>Match Duration:</label>
+          <div class="duration-selector">
+            <button type="button" class="btn-dur-chip" data-min="5" onclick="selectDuration(5)">5m</button>
+            <button type="button" class="btn-dur-chip active" data-min="10" onclick="selectDuration(10)">10m</button>
+            <button type="button" class="btn-dur-chip" data-min="15" onclick="selectDuration(15)">15m</button>
+          </div>
+        </div>
+
+        <div style="font-size:0.8rem; color:var(--muted);">
+          Scores and timer will reset to 0 upon start.
+        </div>
+      </div>
+    </div>
+
+    <!-- Large START MATCH Button -->
+    <div class="start-match-wrapper">
+      <button class="btn-start-match" id="startMatchBtn" disabled onclick="handleStartMatch()">
+        <span>⚡</span>
+        <span id="startBtnText">Select 2 Teams to Start</span>
+        <span>➔</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- Launching Overlay -->
+<div class="overlay-transition" id="launchOverlay">
+  <div class="launch-spinner"></div>
+  <div class="launch-text">Starting Match…</div>
+  <div class="launch-sub">Transmitting team roster to Control Panel & TV Display…</div>
+</div>
+
+<script>
+// ── State ───────────────────────────────────────────────────────────
+let allTeams = [];
+let selectedTeamA = null;
+let selectedTeamB = null;
+let matchDurationSec = 600; // 10 minutes default
+
+// ── DOM References ──────────────────────────────────────────────────
+const teamPoolList = document.getElementById('teamPoolList');
+const poolCount = document.getElementById('poolCount');
+const poolSearchInput = document.getElementById('poolSearchInput');
+
+const slotA = document.getElementById('slotA');
+const placeholderA = document.getElementById('placeholderA');
+const populatedA = document.getElementById('populatedA');
+const slotLogoA = document.getElementById('slotLogoA');
+const slotNameA = document.getElementById('slotNameA');
+const slotStudentsA = document.getElementById('slotStudentsA');
+const removeSlotABtn = document.getElementById('removeSlotABtn');
+
+const slotB = document.getElementById('slotB');
+const placeholderB = document.getElementById('placeholderB');
+const populatedB = document.getElementById('populatedB');
+const slotLogoB = document.getElementById('slotLogoB');
+const slotNameB = document.getElementById('slotNameB');
+const slotStudentsB = document.getElementById('slotStudentsB');
+const removeSlotBBtn = document.getElementById('removeSlotBBtn');
+
+const startMatchBtn = document.getElementById('startMatchBtn');
+const startBtnText = document.getElementById('startBtnText');
+const launchOverlay = document.getElementById('launchOverlay');
+
+// ── Fetch Teams ─────────────────────────────────────────────────────
+async function loadTeams() {
+  try {
+    const res = await fetch('/api/teams');
+    if (!res.ok) throw new Error('Failed to load teams');
+    allTeams = await res.json();
+    poolCount.textContent = `${allTeams.length} Team${allTeams.length === 1 ? '' : 's'}`;
+    renderPool();
+    checkUrlQueryParams();
+  } catch (err) {
+    console.error(err);
+    teamPoolList.innerHTML = `<div style="text-align:center; padding:30px; color:var(--red);">Error loading teams.</div>`;
+  }
+}
+
+// Check if user came via ?select=teamId from Dashboard
+function checkUrlQueryParams() {
+  const params = new URLSearchParams(window.location.search);
+  const selectId = params.get('select');
+  if (selectId) {
+    const team = allTeams.find(t => t.id === selectId);
+    if (team) {
+      handleSelectTeam(team);
+    }
+  }
+}
+
+// ── Render Team Pool ────────────────────────────────────────────────
+function renderPool(filter = '') {
+  const query = filter.toLowerCase().trim();
+  const filtered = allTeams.filter(t => {
+    if (!query) return true;
+    const nameMatch = (t.name || '').toLowerCase().includes(query);
+    const s1 = (t.student1?.name || '').toLowerCase().includes(query);
+    const s2 = (t.student2?.name || '').toLowerCase().includes(query);
+    return nameMatch || s1 || s2;
+  });
+
+  if (filtered.length === 0) {
+    teamPoolList.innerHTML = `
+      <div style="text-align:center; padding:30px 10px; color:var(--muted);">
+        <p style="font-size:1.1rem; margin-bottom:8px;">No teams found</p>
+        <a href="/dashboard" class="nav-link" style="display:inline-block; margin-top:8px;">+ Register Teams</a>
+      </div>
+    `;
+    return;
+  }
+
+  teamPoolList.innerHTML = filtered.map(team => {
+    const isSelectedA = selectedTeamA && selectedTeamA.id === team.id;
+    const isSelectedB = selectedTeamB && selectedTeamB.id === team.id;
+
+    let itemClass = 'pool-item';
+    let btnClass = 'btn-pool-action';
+    let btnText = '＋ Add / Select';
+
+    if (isSelectedA) {
+      itemClass += ' selected-a';
+      btnClass += ' is-selected-a';
+      btnText = '✓ Team A';
+    } else if (isSelectedB) {
+      itemClass += ' selected-b';
+      btnClass += ' is-selected-b';
+      btnText = '✓ Team B';
+    }
+
+    const teamName = team.teamName || team.name || 'Team';
+    const isImage = team.logo && (team.logo.startsWith('/') || team.logo.startsWith('http') || team.logo.startsWith('data:image'));
+    const logoHtml = isImage
+      ? `<img src="${escapeHtml(team.logo)}" alt="${escapeHtml(teamName)}">`
+      : `<span class="preset-icon">${team.logo || '🤖'}</span>`;
+
+    const s1Name = team.student1?.name || '';
+    const s2Name = team.student2?.name || '';
+    const studentsStr = [s1Name, s2Name].filter(Boolean).join(' & ') || 'No students registered';
+
+    return `
+      <div class="${itemClass}">
+        <div class="pool-item-left">
+          <div class="pool-logo">
+            ${logoHtml}
+          </div>
+          <div class="pool-details">
+            <div class="pool-team-name" title="${escapeHtml(teamName)}">${escapeHtml(teamName)}</div>
+            <div class="pool-students" title="${escapeHtml(studentsStr)}">👥 ${escapeHtml(studentsStr)}</div>
+          </div>
+        </div>
+
+        <button class="${btnClass}" onclick="toggleTeamSelection('${team.id}')">
+          ${btnText}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterTeamPool(val) {
+  renderPool(val);
+}
+
+// ── Selection Logic ─────────────────────────────────────────────────
+function toggleTeamSelection(teamId) {
+  const team = allTeams.find(t => t.id === teamId);
+  if (!team) return;
+
+  // If already Team A, deselect it
+  if (selectedTeamA && selectedTeamA.id === team.id) {
+    selectedTeamA = null;
+  }
+  // If already Team B, deselect it
+  else if (selectedTeamB && selectedTeamB.id === team.id) {
+    selectedTeamB = null;
+  }
+  // Otherwise, place into first empty box
+  else {
+    handleSelectTeam(team);
+  }
+
+  updateArenaView();
+  renderPool(poolSearchInput.value);
+}
+
+function handleSelectTeam(team) {
+  if (!selectedTeamA) {
+    selectedTeamA = team;
+  } else if (!selectedTeamB) {
+    if (selectedTeamA.id === team.id) return;
+    selectedTeamB = team;
+  } else {
+    // Both full: replace Team A or Team B
+    selectedTeamA = team;
+  }
+  updateArenaView();
+}
+
+function removeSelectedTeam(slot) {
+  if (slot === 'a') selectedTeamA = null;
+  if (slot === 'b') selectedTeamB = null;
+  updateArenaView();
+  renderPool(poolSearchInput.value);
+}
+
+function swapSelectedTeams() {
+  const temp = selectedTeamA;
+  selectedTeamA = selectedTeamB;
+  selectedTeamB = temp;
+  updateArenaView();
+  renderPool(poolSearchInput.value);
+}
+
+// ── Update Arena Slots View ─────────────────────────────────────────
+function updateArenaView() {
+  // Slot A View
+  if (selectedTeamA) {
+    slotA.classList.add('filled');
+    placeholderA.style.display = 'none';
+    populatedA.style.display = 'flex';
+    removeSlotABtn.style.display = 'flex';
+
+    slotNameA.textContent = selectedTeamA.name;
+    slotLogoA.innerHTML = renderLogoHtml(selectedTeamA.logo, selectedTeamA.name);
+
+    const s1 = selectedTeamA.student1?.name || '';
+    const s2 = selectedTeamA.student2?.name || '';
+    slotStudentsA.innerHTML = `👥 <span class="slot-student-names">${escapeHtml([s1, s2].filter(Boolean).join(' & ') || 'Team Pair')}</span>`;
+  } else {
+    slotA.classList.remove('filled');
+    placeholderA.style.display = 'flex';
+    populatedA.style.display = 'none';
+    removeSlotABtn.style.display = 'none';
+  }
+
+  // Slot B View
+  if (selectedTeamB) {
+    slotB.classList.add('filled');
+    placeholderB.style.display = 'none';
+    populatedB.style.display = 'flex';
+    removeSlotBBtn.style.display = 'flex';
+
+    slotNameB.textContent = selectedTeamB.name;
+    slotLogoB.innerHTML = renderLogoHtml(selectedTeamB.logo, selectedTeamB.name);
+
+    const s1 = selectedTeamB.student1?.name || '';
+    const s2 = selectedTeamB.student2?.name || '';
+    slotStudentsB.innerHTML = `👥 <span class="slot-student-names">${escapeHtml([s1, s2].filter(Boolean).join(' & ') || 'Team Pair')}</span>`;
+  } else {
+    slotB.classList.remove('filled');
+    placeholderB.style.display = 'flex';
+    populatedB.style.display = 'none';
+    removeSlotBBtn.style.display = 'none';
+  }
+
+  // Update Start Button status
+  if (selectedTeamA && selectedTeamB) {
+    startMatchBtn.disabled = false;
+    startBtnText.textContent = `START MATCH: ${selectedTeamA.name} VS ${selectedTeamB.name}`;
+  } else if (selectedTeamA || selectedTeamB) {
+    startMatchBtn.disabled = true;
+    startBtnText.textContent = 'Select Second Team to Enable Match';
+  } else {
+    startMatchBtn.disabled = true;
+    startBtnText.textContent = 'Select 2 Teams to Start';
+  }
+}
+
+// ── Match Duration Selector ─────────────────────────────────────────
+function selectDuration(minutes) {
+  matchDurationSec = minutes * 60;
+  document.querySelectorAll('.btn-dur-chip').forEach(chip => {
+    chip.classList.toggle('active', parseInt(chip.dataset.min) === minutes);
+  });
+}
+
+// ── Start Match Action ──────────────────────────────────────────────
+async function handleStartMatch() {
+  if (!selectedTeamA || !selectedTeamB) {
+    alert('Please select two teams for the match.');
+    return;
+  }
+
+  startMatchBtn.disabled = true;
+  launchOverlay.classList.add('show');
+
+  try {
+    const nameA = selectedTeamA.teamName || selectedTeamA.name || 'Team 1';
+    const nameB = selectedTeamB.teamName || selectedTeamB.name || 'Team 2';
+
+    const payload = {
+      teamA: {
+        teamId: selectedTeamA.id,
+        id: selectedTeamA.id,
+        teamName: nameA,
+        name: nameA,
+        logo: selectedTeamA.logo
+      },
+      teamB: {
+        teamId: selectedTeamB.id,
+        id: selectedTeamB.id,
+        teamName: nameB,
+        name: nameB,
+        logo: selectedTeamB.logo
+      },
+      duration: matchDurationSec
+    };
+
+    const res = await fetch('/api/match/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to start match');
+    }
+
+    const data = await res.json();
+
+    // Redirect to the existing control panel
+    setTimeout(() => {
+      window.location.href = data.redirect || '/control';
+    }, 800);
+  } catch (err) {
+    launchOverlay.classList.remove('show');
+    startMatchBtn.disabled = false;
+    alert(err.message || 'Error starting match.');
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function renderLogoHtml(logo, teamName) {
+  const isImage = logo && (logo.startsWith('/') || logo.startsWith('http') || logo.startsWith('data:image'));
+  if (isImage) {
+    return `<img src="${escapeHtml(logo)}" alt="${escapeHtml(teamName)}">`;
+  }
+  return `<span class="preset-icon">${logo || '🤖'}</span>`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Start
+loadTeams();
+</script>
+</body>
+</html>
+
